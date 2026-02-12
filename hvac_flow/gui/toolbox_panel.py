@@ -3,17 +3,36 @@
 from PyQt5.QtCore import Qt, QMimeData, QPoint
 from PyQt5.QtGui import QDrag, QFont, QColor, QPalette, QIcon, QPixmap, QPainter
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton,
-                              QFrame, QSizePolicy)
+                              QFrame, QSizePolicy, QScrollArea)
 
 
-# Equipment types: (type_id, display_name, icon_char, color)
+# Equipment types: (type_id, display_name, icon_char, color, category)
 EQUIPMENT = [
-    ("source",         "Air Source",       "S", "#43a047"),
-    ("cooling_coil",   "Cooling Coil",     "C", "#1e88e5"),
-    ("heating_coil",   "Heating Coil",     "H", "#e53935"),
-    ("fan",            "Supply Fan",       "F", "#fb8c00"),
-    ("enthalpy_wheel", "Enthalpy Wheel",   "E", "#8e24aa"),
-    ("mixing_box",     "Mixing Box",       "M", "#00897b"),
+    # — Sources & Sinks —
+    ("source",              "Air Source",               "S",  "#43a047",  "Sources / Sinks"),
+    ("air_sink",            "Air Sink / Exhaust",       "X",  "#78909c",  "Sources / Sinks"),
+    # — Coils —
+    ("cooling_coil",        "Cooling Coil",             "C",  "#1e88e5",  "Coils"),
+    ("heating_coil",        "Heating Coil",             "H",  "#e53935",  "Coils"),
+    # — Fans —
+    ("fan",                 "Supply Fan",               "F",  "#fb8c00",  "Fans"),
+    ("return_fan",          "Return / Exhaust Fan",     "R",  "#ef6c00",  "Fans"),
+    # — Heat Recovery —
+    ("enthalpy_wheel",      "Enthalpy Wheel",           "E",  "#8e24aa",  "Heat Recovery"),
+    ("sensible_hr",         "Sensible Heat Recovery",   "P",  "#7b1fa2",  "Heat Recovery"),
+    ("runaround_loop",      "Runaround Loop",           "L",  "#6a1b9a",  "Heat Recovery"),
+    # — Mixing & Splitting —
+    ("mixing_box",          "Mixing Box",               "M",  "#00897b",  "Mixing / Splitting"),
+    ("duct_split",          "Duct Split",               "Y",  "#00796b",  "Mixing / Splitting"),
+    # — Humidification —
+    ("steam_humidifier",    "Steam Humidifier",         "W",  "#0277bd",  "Humidification"),
+    ("adiabatic_humidifier","Evap Cooler / Humidifier", "A",  "#0288d1",  "Humidification"),
+    # — Evaporative Cooling —
+    ("indirect_evap_cooler","Indirect Evap Cooler",     "I",  "#0097a7",  "Evaporative Cooling"),
+    # — Desiccant —
+    ("desiccant_wheel",     "Desiccant Wheel",          "D",  "#5e35b1",  "Desiccant"),
+    # — Zone —
+    ("zone_process",        "Zone Process",             "Z",  "#6d4c41",  "Zone"),
 ]
 
 
@@ -79,12 +98,24 @@ class EquipmentDragButton(QPushButton):
 
 
 class ToolboxPanel(QWidget):
-    """Left panel containing draggable equipment buttons."""
+    """Left panel containing draggable equipment buttons, grouped by category."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedWidth(200)
-        layout = QVBoxLayout(self)
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setFrameShape(QFrame.NoFrame)
+        outer.addWidget(scroll)
+
+        inner = QWidget()
+        layout = QVBoxLayout(inner)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(4)
 
@@ -97,7 +128,14 @@ class ToolboxPanel(QWidget):
         sep.setFrameShape(QFrame.HLine)
         layout.addWidget(sep)
 
-        for type_id, name, icon_char, color in EQUIPMENT:
+        last_cat = None
+        for type_id, name, icon_char, color, category in EQUIPMENT:
+            if category != last_cat:
+                cat_label = QLabel(category)
+                cat_label.setFont(QFont("Segoe UI", 8, QFont.Bold))
+                cat_label.setStyleSheet("color: #666; margin-top: 6px;")
+                layout.addWidget(cat_label)
+                last_cat = category
             btn = EquipmentDragButton(type_id, name, icon_char, color)
             layout.addWidget(btn)
 
@@ -107,3 +145,5 @@ class ToolboxPanel(QWidget):
         hint.setAlignment(Qt.AlignCenter)
         hint.setStyleSheet("color: #888; font-size: 11px;")
         layout.addWidget(hint)
+
+        scroll.setWidget(inner)

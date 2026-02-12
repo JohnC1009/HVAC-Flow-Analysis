@@ -6,6 +6,16 @@ from hvac_flow.models.heating_coil import HeatingCoilNode
 from hvac_flow.models.fan import FanNode
 from hvac_flow.models.enthalpy_wheel import EnthalpyWheelNode
 from hvac_flow.models.mixing_box import MixingBoxNode
+from hvac_flow.models.zone_process import ZoneProcessNode
+from hvac_flow.models.duct_split import DuctSplitNode
+from hvac_flow.models.steam_humidifier import SteamHumidifierNode
+from hvac_flow.models.adiabatic_humidifier import AdiabaticHumidifierNode
+from hvac_flow.models.sensible_heat_recovery import SensibleHeatRecoveryNode
+from hvac_flow.models.runaround_loop import RunaroundLoopNode
+from hvac_flow.models.indirect_evap_cooler import IndirectEvapCoolerNode
+from hvac_flow.models.desiccant_wheel import DesiccantWheelNode
+from hvac_flow.models.return_fan import ReturnFanNode
+from hvac_flow.models.air_sink import AirSinkNode
 
 
 class NodeFactory:
@@ -29,5 +39,9 @@ class NodeFactory:
 
 
 for _cls in [SourceNode, CoolingCoilNode, HeatingCoilNode,
-             FanNode, EnthalpyWheelNode, MixingBoxNode]:
+             FanNode, EnthalpyWheelNode, MixingBoxNode,
+             ZoneProcessNode, DuctSplitNode, SteamHumidifierNode,
+             AdiabaticHumidifierNode, SensibleHeatRecoveryNode,
+             RunaroundLoopNode, IndirectEvapCoolerNode,
+             DesiccantWheelNode, ReturnFanNode, AirSinkNode]:
     NodeFactory.register(_cls)

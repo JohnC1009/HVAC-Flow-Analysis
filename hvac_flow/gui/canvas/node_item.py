@@ -9,12 +9,22 @@ from hvac_flow.gui.canvas.port_item import PortItem
 
 # Node colour palette by equipment type
 NODE_COLORS = {
-    "source":         ("#e8f5e9", "#43a047"),
-    "cooling_coil":   ("#e3f2fd", "#1e88e5"),
-    "heating_coil":   ("#fbe9e7", "#e53935"),
-    "fan":            ("#fff3e0", "#fb8c00"),
-    "enthalpy_wheel": ("#f3e5f5", "#8e24aa"),
-    "mixing_box":     ("#e0f7fa", "#00897b"),
+    "source":              ("#e8f5e9", "#43a047"),
+    "cooling_coil":        ("#e3f2fd", "#1e88e5"),
+    "heating_coil":        ("#fbe9e7", "#e53935"),
+    "fan":                 ("#fff3e0", "#fb8c00"),
+    "enthalpy_wheel":      ("#f3e5f5", "#8e24aa"),
+    "mixing_box":          ("#e0f7fa", "#00897b"),
+    "zone_process":        ("#efebe9", "#6d4c41"),
+    "duct_split":          ("#e0f2f1", "#00796b"),
+    "steam_humidifier":    ("#e1f5fe", "#0277bd"),
+    "adiabatic_humidifier":("#e1f5fe", "#0288d1"),
+    "sensible_hr":         ("#f3e5f5", "#7b1fa2"),
+    "runaround_loop":      ("#ede7f6", "#6a1b9a"),
+    "indirect_evap_cooler":("#e0f7fa", "#0097a7"),
+    "desiccant_wheel":     ("#ede7f6", "#5e35b1"),
+    "return_fan":          ("#fff3e0", "#ef6c00"),
+    "air_sink":            ("#eceff1", "#78909c"),
 }
 
 WIDTH = 180
