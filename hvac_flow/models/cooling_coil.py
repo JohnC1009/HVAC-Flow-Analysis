@@ -1,0 +1,64 @@
+"""Cooling coil node — cools and/or dehumidifies air."""
+
+from hvac_flow.engine.constants import CP_AIR_IP
+from hvac_flow.models.base_node import BaseNode, Port
+
+
+class CoolingCoilNode(BaseNode):
+    NODE_TYPE = "cooling_coil"
+    DISPLAY_NAME = "Cooling Coil"
+
+    def _init_ports(self):
+        self.ports["inlet"] = Port(name="inlet", direction="inlet")
+        self.ports["outlet"] = Port(name="outlet", direction="outlet")
+
+    def _init_parameters(self):
+        self.parameters = {
+            "leaving_db": 55.0,
+            "leaving_mode": "rh",
+            "leaving_rh": 0.90,
+            "leaving_w": 0.008,
+        }
+
+    def compute(self, calc) -> None:
+        inlet = self.ports["inlet"]
+        entering = inlet.air_state
+        mass_flow = inlet.mass_flow
+        ldb = self.parameters["leaving_db"]
+
+        if self.parameters["leaving_mode"] == "rh":
+            leaving = calc.from_db_rh(ldb, self.parameters["leaving_rh"],
+                                      label=f"{self.name} Out")
+        else:
+            leaving = calc.from_db_w(ldb, self.parameters["leaving_w"],
+                                     label=f"{self.name} Out")
+
+        delta_h_total = entering.enthalpy - leaving.enthalpy
+        delta_h_sensible = (entering.dry_bulb - leaving.dry_bulb) * CP_AIR_IP
+        total_load = mass_flow * delta_h_total * 60      # Btu/hr
+        sensible_load = mass_flow * delta_h_sensible * 60
+        latent_load = total_load - sensible_load
+
+        self.ports["outlet"].air_state = leaving
+        self.ports["outlet"].mass_flow = mass_flow
+        self.results = {
+            "outlet_state": leaving,
+            "total_load_btuh": total_load,
+            "sensible_load_btuh": sensible_load,
+            "latent_load_btuh": latent_load,
+            "total_load_tons": total_load / 12000.0,
+            "shr": sensible_load / total_load if total_load else 0.0,
+        }
+
+    def get_param_definitions(self):
+        return [
+            {"name": "leaving_db", "type": "float", "min": 30, "max": 100,
+             "unit": "°F", "tooltip": "Leaving dry-bulb temperature"},
+            {"name": "leaving_mode", "type": "choice",
+             "choices": ["rh", "w"],
+             "tooltip": "Specify leaving condition as RH or humidity ratio"},
+            {"name": "leaving_rh", "type": "float", "min": 0.0, "max": 1.0,
+             "unit": "fraction", "tooltip": "Leaving relative humidity"},
+            {"name": "leaving_w", "type": "float", "min": 0.0, "max": 0.03,
+             "unit": "lb/lb", "tooltip": "Leaving humidity ratio"},
+        ]
