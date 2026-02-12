@@ -15,6 +15,11 @@ class AirSinkNode(BaseNode):
 
     def compute(self, calc) -> None:
         entering = self.ports["inlet"].air_state
+        if entering is None:
+            raise ValueError(
+                f"[{self.name}] Inlet air state is not available — "
+                f"check upstream connections."
+            )
         mass_flow = self.ports["inlet"].mass_flow
         self.results = {
             "inlet_state": entering,

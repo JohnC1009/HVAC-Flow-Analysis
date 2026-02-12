@@ -23,23 +23,43 @@ class SourceNode(BaseNode):
     def compute(self, calc) -> None:
         mode = self.parameters["input_mode"]
         db = self.parameters["dry_bulb"]
+        cfm = self.parameters["airflow_cfm"]
+        if cfm <= 0:
+            raise ValueError(
+                f"[{self.name}] Airflow must be > 0 CFM (got {cfm})."
+            )
 
         if mode == "db_rh":
-            state = calc.from_db_rh(db, self.parameters["relative_humidity"],
-                                    label=self.name)
+            rh = self.parameters["relative_humidity"]
+            if not (0.0 <= rh <= 1.0):
+                raise ValueError(
+                    f"[{self.name}] Relative humidity must be 0-1 "
+                    f"(got {rh})."
+                )
+            state = calc.from_db_rh(db, rh, label=self.name)
         elif mode == "db_wb":
-            state = calc.from_db_wb(db, self.parameters["wet_bulb"],
-                                    label=self.name)
+            wb = self.parameters["wet_bulb"]
+            if wb > db:
+                raise ValueError(
+                    f"[{self.name}] Wet-bulb ({wb:.1f}°F) cannot exceed "
+                    f"dry-bulb ({db:.1f}°F)."
+                )
+            state = calc.from_db_wb(db, wb, label=self.name)
         elif mode == "db_dp":
-            state = calc.from_db_dp(db, self.parameters["dew_point"],
-                                    label=self.name)
+            dp = self.parameters["dew_point"]
+            if dp > db:
+                raise ValueError(
+                    f"[{self.name}] Dew-point ({dp:.1f}°F) cannot exceed "
+                    f"dry-bulb ({db:.1f}°F)."
+                )
+            state = calc.from_db_dp(db, dp, label=self.name)
         else:
             state = calc.from_db_rh(db, self.parameters["relative_humidity"],
                                     label=self.name)
 
         self.ports["outlet"].air_state = state
         density = calc.get_moist_air_density(state)
-        self.ports["outlet"].mass_flow = self.parameters["airflow_cfm"] * density
+        self.ports["outlet"].mass_flow = cfm * density
         self.results = {
             "outlet_state": state,
             "mass_flow_lb_min": self.ports["outlet"].mass_flow,

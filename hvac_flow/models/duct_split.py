@@ -19,7 +19,17 @@ class DuctSplitNode(BaseNode):
 
     def compute(self, calc) -> None:
         entering = self.ports["inlet"].air_state
+        if entering is None:
+            raise ValueError(
+                f"[{self.name}] Inlet air state is not available — "
+                f"check upstream connections."
+            )
         mass_flow = self.ports["inlet"].mass_flow
+        if not mass_flow or mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Inlet mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
         f = self.parameters["split_fraction"]
 
         state_a = entering.with_label(f"{self.name} A")

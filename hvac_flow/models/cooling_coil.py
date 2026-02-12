@@ -20,11 +20,33 @@ class CoolingCoilNode(BaseNode):
             "leaving_w": 0.008,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "total_load_btuh": None,     # Max total cooling capacity (Btu/hr)
+            "sensible_load_btuh": None,  # Max sensible cooling capacity (Btu/hr)
+        }
+
     def compute(self, calc) -> None:
         inlet = self.ports["inlet"]
         entering = inlet.air_state
+        if entering is None:
+            raise ValueError(
+                f"[{self.name}] Inlet air state is not available — "
+                f"check upstream connections."
+            )
         mass_flow = inlet.mass_flow
+        if not mass_flow or mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Inlet mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
         ldb = self.parameters["leaving_db"]
+
+        if ldb >= entering.dry_bulb:
+            raise ValueError(
+                f"[{self.name}] Leaving DB ({ldb:.1f}°F) >= entering DB "
+                f"({entering.dry_bulb:.1f}°F) — cooling coil cannot heat."
+            )
 
         if self.parameters["leaving_mode"] == "rh":
             leaving = calc.from_db_rh(ldb, self.parameters["leaving_rh"],
@@ -61,4 +83,14 @@ class CoolingCoilNode(BaseNode):
              "unit": "fraction", "tooltip": "Leaving relative humidity"},
             {"name": "leaving_w", "type": "float", "min": 0.0, "max": 0.03,
              "unit": "lb/lb", "tooltip": "Leaving humidity ratio"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "total_load_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum total cooling capacity (leave 0 for no limit)"},
+            {"name": "sensible_load_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum sensible cooling capacity (leave 0 for no limit)"},
         ]

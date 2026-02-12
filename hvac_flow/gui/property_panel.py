@@ -67,6 +67,28 @@ class PropertyPanel(QWidget):
 
         self._layout.addWidget(param_group)
 
+        # Boundary conditions group (only shown if the node defines them)
+        bc_defs = node.get_boundary_definitions()
+        if bc_defs:
+            bc_group = QGroupBox("Boundary Conditions (Equipment Limits)")
+            bc_form = QFormLayout()
+            bc_group.setLayout(bc_form)
+
+            bc_definitions = {d["name"]: d for d in bc_defs}
+
+            for bname, bval in node.boundary_conditions.items():
+                defn = bc_definitions.get(bname, {})
+                display_val = bval if bval is not None else 0.0
+                widget = self._make_boundary_editor(bname, display_val, defn, node)
+                if widget:
+                    label_text = bname.replace("_", " ").title()
+                    unit = defn.get("unit", "")
+                    if unit:
+                        label_text += f" ({unit})"
+                    bc_form.addRow(label_text, widget)
+
+            self._layout.addWidget(bc_group)
+
         # Results group
         if node.results:
             res_group = QGroupBox("Results")
@@ -82,6 +104,28 @@ class PropertyPanel(QWidget):
                     res_form.addRow(rname.replace("_", " ").title(), lbl)
 
             self._layout.addWidget(res_group)
+
+        # Capacity warnings (only shown if any exist)
+        if node.capacity_warnings:
+            warn_group = QGroupBox("Capacity Warnings")
+            warn_layout = QVBoxLayout()
+            warn_group.setLayout(warn_layout)
+            warn_group.setStyleSheet(
+                "QGroupBox { color: #b71c1c; font-weight: bold; }"
+            )
+
+            for warning in node.capacity_warnings:
+                wlbl = QLabel(warning)
+                wlbl.setWordWrap(True)
+                wlbl.setFont(QFont("Segoe UI", 8))
+                wlbl.setStyleSheet(
+                    "background: #fff3e0; color: #e65100; "
+                    "padding: 4px; border-radius: 3px; "
+                    "border: 1px solid #ffcc80;"
+                )
+                warn_layout.addWidget(wlbl)
+
+            self._layout.addWidget(warn_group)
 
         self._layout.addStretch()
 
@@ -135,12 +179,36 @@ class PropertyPanel(QWidget):
 
         return None
 
+    def _make_boundary_editor(self, bname, bval, defn, node):
+        """Create an editor for a boundary condition value.
+
+        Value of 0 means 'no limit' (stored as None internally).
+        """
+        sb = QDoubleSpinBox()
+        sb.setDecimals(1)
+        sb.setRange(0, defn.get("max", 1e9))
+        sb.setSpecialValueText("No Limit")
+        sb.setValue(bval)
+        sb.setToolTip(defn.get("tooltip", "0 = no limit"))
+        sb.valueChanged.connect(
+            lambda v, n=bname: self._on_boundary_changed(n, v)
+        )
+        return sb
+
     def _on_param_changed(self, param_name, value):
         if self._current_node is None:
             return
         self._current_node.parameters[param_name] = value
         self.parameter_changed.emit(
             self._current_node.id, param_name, value
+        )
+
+    def _on_boundary_changed(self, bc_name, value):
+        """Handle boundary condition value change.  0 → None (no limit)."""
+        if self._current_node is None:
+            return
+        self._current_node.boundary_conditions[bc_name] = (
+            value if value > 0 else None
         )
 
     def _add_airstate_row(self, form, label, state: AirState):

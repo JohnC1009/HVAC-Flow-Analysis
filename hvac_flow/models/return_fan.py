@@ -20,13 +20,33 @@ class ReturnFanNode(BaseNode):
             "temp_rise": 1.0,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "fan_heat_btuh": None,  # Max fan heat (Btu/hr)
+        }
+
     def compute(self, calc) -> None:
         entering = self.ports["inlet"].air_state
+        if entering is None:
+            raise ValueError(
+                f"[{self.name}] Inlet air state is not available — "
+                f"check upstream connections."
+            )
         mass_flow = self.ports["inlet"].mass_flow
+        if not mass_flow or mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Inlet mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
 
         if self.parameters["input_mode"] == "bhp":
             bhp = self.parameters["bhp"]
             eff = self.parameters["motor_efficiency"]
+            if eff <= 0:
+                raise ValueError(
+                    f"[{self.name}] Motor efficiency must be > 0 "
+                    f"(got {eff})."
+                )
             heat_btuh = bhp * HP_TO_BTUH / eff
             temp_rise = heat_btuh / (mass_flow * 60 * CP_AIR_IP)
         else:
@@ -56,4 +76,11 @@ class ReturnFanNode(BaseNode):
              "max": 1.0, "unit": "fraction", "tooltip": "Motor efficiency"},
             {"name": "temp_rise", "type": "float", "min": 0, "max": 20,
              "unit": "°F", "tooltip": "Direct temperature rise"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "fan_heat_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum fan heat dissipation (leave 0 for no limit)"},
         ]

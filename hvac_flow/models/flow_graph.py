@@ -113,17 +113,43 @@ class FlowGraph:
     # ── Validation ───────────────────────────────────────────────────
 
     def validate(self) -> List[str]:
-        """Return a list of validation error strings (empty = valid)."""
+        """Return a list of validation error strings (empty = valid).
+
+        Each error message is prefixed with ``[NodeName]`` so the user
+        can quickly identify *which* node has the problem.
+        """
         errors = []
+        if not self.nodes:
+            errors.append("Graph is empty — add at least one node.")
+            return errors
+
         for node in self.nodes.values():
             for port in node.inlet_ports:
                 if port.connected_to is None:
                     # Only error if the node isn't a source type
                     if node.inlet_ports:
                         errors.append(
-                            f"{node.name}: inlet port '{port.name}' "
-                            f"is not connected"
+                            f"[{node.name}] Inlet port '{port.name}' "
+                            f"is not connected."
                         )
+
+            # Check for outlet ports that should be connected
+            for port in node.outlet_ports:
+                if port.connected_to is None:
+                    # Not necessarily an error, but warn for non-sink nodes
+                    from hvac_flow.models.air_sink import AirSinkNode
+                    if not isinstance(node, AirSinkNode):
+                        has_any_connected_outlet = any(
+                            p.connected_to is not None
+                            for p in node.outlet_ports
+                        )
+                        if not has_any_connected_outlet:
+                            errors.append(
+                                f"[{node.name}] No outlet ports are "
+                                f"connected — node output is unused."
+                            )
+                            break  # Only report once per node
+
         try:
             self.topological_order()
         except ValueError as e:

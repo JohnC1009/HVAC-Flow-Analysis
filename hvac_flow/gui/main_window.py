@@ -138,9 +138,27 @@ class MainWindow(QMainWindow):
             node_items = [i for i in selected if isinstance(i, NodeItem)]
             if node_items:
                 self.property_panel.show_node(node_items[0].node)
-            self._status_label.setText(
-                f"Solved — {len(self.solver.all_states)} state points"
-            )
+
+            # Show capacity warnings if any
+            if self.solver.warnings:
+                status_parts = [
+                    f"Solved — {len(self.solver.all_states)} state points"
+                ]
+                warning_count = len(self.solver.warnings)
+                status_parts.append(
+                    f" | {warning_count} warning(s)"
+                )
+                self._status_label.setText("".join(status_parts))
+                QMessageBox.information(
+                    self, "Solver Warnings — Boundary Conditions Exceeded",
+                    "The system solved successfully, but the following "
+                    "boundary conditions were exceeded:\n\n"
+                    + "\n".join(self.solver.warnings)
+                )
+            else:
+                self._status_label.setText(
+                    f"Solved — {len(self.solver.all_states)} state points"
+                )
         else:
             QMessageBox.warning(
                 self, "Solver Errors",

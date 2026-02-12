@@ -29,9 +29,24 @@ class DesiccantWheelNode(BaseNode):
             "heat_carryover_fraction": 0.10,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "moisture_removed_lb_hr": None,  # Max moisture removal (lb/hr)
+        }
+
     def compute(self, calc) -> None:
         p_in = self.ports["process_in"].air_state
         r_in = self.ports["regen_in"].air_state
+        if p_in is None:
+            raise ValueError(
+                f"[{self.name}] Process inlet air state is not available — "
+                f"check upstream connections on 'process_in' port."
+            )
+        if r_in is None:
+            raise ValueError(
+                f"[{self.name}] Regen inlet air state is not available — "
+                f"check upstream connections on 'regen_in' port."
+            )
         eff = self.parameters["dehumidification_effectiveness"]
         carryover = self.parameters["heat_carryover_fraction"]
 
@@ -90,4 +105,11 @@ class DesiccantWheelNode(BaseNode):
             {"name": "heat_carryover_fraction", "type": "float",
              "min": 0.0, "max": 0.5, "unit": "fraction",
              "tooltip": "Fraction of regen heat carried over to process side"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "moisture_removed_lb_hr", "type": "float",
+             "min": 0, "max": 1e6, "unit": "lb/hr",
+             "tooltip": "Maximum moisture removal capacity (leave 0 for no limit)"},
         ]

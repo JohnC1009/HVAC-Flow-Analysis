@@ -23,9 +23,24 @@ class IndirectEvapCoolerNode(BaseNode):
             "wet_bulb_effectiveness": 0.70,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "cooling_btuh": None,  # Max cooling capacity (Btu/hr)
+        }
+
     def compute(self, calc) -> None:
         p_in = self.ports["primary_in"].air_state
         s_in = self.ports["secondary_in"].air_state
+        if p_in is None:
+            raise ValueError(
+                f"[{self.name}] Primary inlet air state is not available — "
+                f"check upstream connections on 'primary_in' port."
+            )
+        if s_in is None:
+            raise ValueError(
+                f"[{self.name}] Secondary inlet air state is not available — "
+                f"check upstream connections on 'secondary_in' port."
+            )
         eff = self.parameters["wet_bulb_effectiveness"]
 
         # Primary side: sensible cooling toward secondary wet-bulb
@@ -72,4 +87,11 @@ class IndirectEvapCoolerNode(BaseNode):
             {"name": "wet_bulb_effectiveness", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Wet-bulb effectiveness (how close primary DB gets to secondary WB)"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "cooling_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum cooling capacity (leave 0 for no limit)"},
         ]

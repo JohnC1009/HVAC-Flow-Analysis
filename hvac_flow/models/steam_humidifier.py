@@ -22,9 +22,24 @@ class SteamHumidifierNode(BaseNode):
             "steam_rate_lb_hr": 50.0,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "steam_consumption_lb_hr": None,  # Max steam generation (lb/hr)
+        }
+
     def compute(self, calc) -> None:
         entering = self.ports["inlet"].air_state
+        if entering is None:
+            raise ValueError(
+                f"[{self.name}] Inlet air state is not available — "
+                f"check upstream connections."
+            )
         mass_flow = self.ports["inlet"].mass_flow
+        if not mass_flow or mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Inlet mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
         mode = self.parameters["control_mode"]
 
         if mode == "target_rh":
@@ -67,4 +82,11 @@ class SteamHumidifierNode(BaseNode):
             {"name": "steam_rate_lb_hr", "type": "float",
              "min": 0, "max": 10000, "unit": "lb/hr",
              "tooltip": "Fixed steam injection rate"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "steam_consumption_lb_hr", "type": "float",
+             "min": 0, "max": 1e6, "unit": "lb/hr",
+             "tooltip": "Maximum steam generation capacity (leave 0 for no limit)"},
         ]

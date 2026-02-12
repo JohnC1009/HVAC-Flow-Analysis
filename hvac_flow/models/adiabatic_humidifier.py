@@ -20,9 +20,24 @@ class AdiabaticHumidifierNode(BaseNode):
             "saturation_efficiency": 0.85,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "water_consumption_lb_hr": None,  # Max water supply (lb/hr)
+        }
+
     def compute(self, calc) -> None:
         entering = self.ports["inlet"].air_state
+        if entering is None:
+            raise ValueError(
+                f"[{self.name}] Inlet air state is not available — "
+                f"check upstream connections."
+            )
         mass_flow = self.ports["inlet"].mass_flow
+        if not mass_flow or mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Inlet mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
         eff = self.parameters["saturation_efficiency"]
 
         # Saturation state at inlet wet-bulb temperature
@@ -54,4 +69,11 @@ class AdiabaticHumidifierNode(BaseNode):
             {"name": "saturation_efficiency", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Saturation efficiency (0-1). Typical wetted media: 0.80-0.95"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "water_consumption_lb_hr", "type": "float",
+             "min": 0, "max": 1e6, "unit": "lb/hr",
+             "tooltip": "Maximum water supply rate (leave 0 for no limit)"},
         ]

@@ -19,9 +19,24 @@ class EnthalpyWheelNode(BaseNode):
             "latent_effectiveness": 0.70,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "sensible_recovery_btuh": None,  # Max recovery capacity (Btu/hr)
+        }
+
     def compute(self, calc) -> None:
         s_in = self.ports["supply_in"].air_state
         e_in = self.ports["exhaust_in"].air_state
+        if s_in is None:
+            raise ValueError(
+                f"[{self.name}] Supply inlet air state is not available — "
+                f"check upstream connections on 'supply_in' port."
+            )
+        if e_in is None:
+            raise ValueError(
+                f"[{self.name}] Exhaust inlet air state is not available — "
+                f"check upstream connections on 'exhaust_in' port."
+            )
         eps_s = self.parameters["sensible_effectiveness"]
         eps_l = self.parameters["latent_effectiveness"]
 
@@ -64,4 +79,11 @@ class EnthalpyWheelNode(BaseNode):
             {"name": "latent_effectiveness", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Latent heat recovery effectiveness"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "sensible_recovery_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum energy recovery capacity (leave 0 for no limit)"},
         ]

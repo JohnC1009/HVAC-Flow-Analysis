@@ -23,9 +23,24 @@ class SensibleHeatRecoveryNode(BaseNode):
             "device_type": "plate_exchanger",  # informational label
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "sensible_recovery_btuh": None,  # Max recovery capacity (Btu/hr)
+        }
+
     def compute(self, calc) -> None:
         s_in = self.ports["supply_in"].air_state
         e_in = self.ports["exhaust_in"].air_state
+        if s_in is None:
+            raise ValueError(
+                f"[{self.name}] Supply inlet air state is not available — "
+                f"check upstream connections on 'supply_in' port."
+            )
+        if e_in is None:
+            raise ValueError(
+                f"[{self.name}] Exhaust inlet air state is not available — "
+                f"check upstream connections on 'exhaust_in' port."
+            )
         eps = self.parameters["sensible_effectiveness"]
 
         # Supply side: DB changes, W unchanged
@@ -65,4 +80,11 @@ class SensibleHeatRecoveryNode(BaseNode):
             {"name": "device_type", "type": "choice",
              "choices": ["plate_exchanger", "heat_wheel", "heat_pipe"],
              "tooltip": "Device type (informational)"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "sensible_recovery_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum sensible recovery capacity (leave 0 for no limit)"},
         ]

@@ -30,9 +30,24 @@ class RunaroundLoopNode(BaseNode):
             "glycol_flow_gpm": 50.0,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "sensible_recovery_btuh": None,  # Max recovery capacity (Btu/hr)
+        }
+
     def compute(self, calc) -> None:
         s_in = self.ports["supply_in"].air_state
         e_in = self.ports["exhaust_in"].air_state
+        if s_in is None:
+            raise ValueError(
+                f"[{self.name}] Supply inlet air state is not available — "
+                f"check upstream connections on 'supply_in' port."
+            )
+        if e_in is None:
+            raise ValueError(
+                f"[{self.name}] Exhaust inlet air state is not available — "
+                f"check upstream connections on 'exhaust_in' port."
+            )
         eps = self.parameters["sensible_effectiveness"]
         s_mass = self.ports["supply_in"].mass_flow
         e_mass = self.ports["exhaust_in"].mass_flow
@@ -86,4 +101,11 @@ class RunaroundLoopNode(BaseNode):
             {"name": "glycol_flow_gpm", "type": "float",
              "min": 0, "max": 1000, "unit": "GPM",
              "tooltip": "Glycol loop flow rate (informational)"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "sensible_recovery_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum sensible recovery capacity (leave 0 for no limit)"},
         ]

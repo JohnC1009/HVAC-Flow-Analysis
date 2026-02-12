@@ -24,10 +24,25 @@ class ZoneProcessNode(BaseNode):
             "sensible_heat_ratio": 0.80,
         }
 
+    def _init_boundary_conditions(self):
+        self.boundary_conditions = {
+            "total_load_btuh": None,  # Max total zone load capacity (Btu/hr)
+        }
+
     def compute(self, calc) -> None:
         inlet = self.ports["supply_air"]
         entering = inlet.air_state
+        if entering is None:
+            raise ValueError(
+                f"[{self.name}] Supply air state is not available — "
+                f"check upstream connections."
+            )
         mass_flow = inlet.mass_flow
+        if not mass_flow or mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Supply air mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
 
         if self.parameters["input_mode"] == "loads":
             q_sensible = self.parameters["sensible_load_btuh"]
@@ -79,4 +94,11 @@ class ZoneProcessNode(BaseNode):
             {"name": "sensible_heat_ratio", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Sensible heat ratio (SHR mode)"},
+        ]
+
+    def get_boundary_definitions(self):
+        return [
+            {"name": "total_load_btuh", "type": "float",
+             "min": 0, "max": 1e9, "unit": "Btu/hr",
+             "tooltip": "Maximum total zone load capacity (leave 0 for no limit)"},
         ]

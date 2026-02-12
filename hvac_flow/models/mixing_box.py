@@ -25,6 +25,16 @@ class MixingBoxNode(BaseNode):
     def compute(self, calc) -> None:
         p = self.ports["primary"]
         s = self.ports["secondary"]
+        if p.air_state is None:
+            raise ValueError(
+                f"[{self.name}] Primary inlet air state is not available — "
+                f"check upstream connections on 'primary' port."
+            )
+        if s.air_state is None:
+            raise ValueError(
+                f"[{self.name}] Secondary inlet air state is not available — "
+                f"check upstream connections on 'secondary' port."
+            )
 
         f = self._determine_oa_fraction(p, s)
 

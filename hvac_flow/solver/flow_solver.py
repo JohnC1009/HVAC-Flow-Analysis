@@ -1,6 +1,6 @@
 """Flow solver — propagates air states through the equipment graph."""
 
-from typing import List
+from typing import Dict, List
 
 from hvac_flow.engine.air_state import AirState
 from hvac_flow.engine.psychro_calc import PsychroCalc
@@ -8,7 +8,14 @@ from hvac_flow.models.flow_graph import FlowGraph
 
 
 class FlowSolver:
-    """Traverses the flow graph in topological order, computing each node."""
+    """Traverses the flow graph in topological order, computing each node.
+
+    After a successful ``solve()`` call:
+    * ``self.all_states`` — every resolved outlet AirState (for the chart).
+    * ``self.node_errors`` — per-node computation error messages.
+    * ``self.node_warnings`` — per-node boundary-condition warnings.
+    * ``self.errors`` / ``self.warnings`` — aggregate lists.
+    """
 
     def __init__(self, graph: FlowGraph, calc: PsychroCalc):
         self.graph = graph
@@ -16,6 +23,8 @@ class FlowSolver:
         self.errors: List[str] = []
         self.warnings: List[str] = []
         self.all_states: List[AirState] = []
+        self.node_errors: Dict[str, List[str]] = {}   # node_id -> errors
+        self.node_warnings: Dict[str, List[str]] = {}  # node_id -> warnings
 
     def solve(self) -> bool:
         """Run a full solve pass.
@@ -27,6 +36,12 @@ class FlowSolver:
         self.errors.clear()
         self.warnings.clear()
         self.all_states.clear()
+        self.node_errors.clear()
+        self.node_warnings.clear()
+
+        # Clear previous capacity warnings on all nodes
+        for node in self.graph.nodes.values():
+            node.capacity_warnings.clear()
 
         # Validate
         validation = self.graph.validate()
@@ -45,9 +60,19 @@ class FlowSolver:
             try:
                 self._propagate_inlets(node)
                 node.compute(self.calc)
+                self._check_boundary_conditions(node)
                 self._collect_states(node)
             except Exception as e:
-                self.errors.append(f"Error computing '{node.name}': {e}")
+                err_msg = str(e)
+                # If the error message already includes the node name
+                # (from our enhanced node-level checks), use it directly.
+                if err_msg.startswith(f"[{node.name}]"):
+                    self.errors.append(err_msg)
+                else:
+                    self.errors.append(
+                        f"[{node.name}] Error: {err_msg}"
+                    )
+                self.node_errors.setdefault(node.id, []).append(err_msg)
                 return False
 
         return True
@@ -63,16 +88,26 @@ class FlowSolver:
                 continue
             upstream_port = upstream_node.ports.get(connector.source_port_name)
             if upstream_port is None or upstream_port.air_state is None:
-                self.warnings.append(
-                    f"Upstream port '{connector.source_port_name}' on "
+                msg = (
+                    f"[{node.name}] Upstream port "
+                    f"'{connector.source_port_name}' on "
                     f"'{upstream_node.name}' has no air state."
                 )
+                self.warnings.append(msg)
+                self.node_warnings.setdefault(node.id, []).append(msg)
                 continue
             state = connector.apply_duct_loss(
                 upstream_port.air_state, upstream_port.mass_flow, self.calc
             )
             port.air_state = state
             port.mass_flow = upstream_port.mass_flow
+
+    def _check_boundary_conditions(self, node):
+        """Run boundary-condition checks and collect any warnings."""
+        bc_warnings = node.check_boundary_conditions()
+        if bc_warnings:
+            self.warnings.extend(bc_warnings)
+            self.node_warnings.setdefault(node.id, []).extend(bc_warnings)
 
     def _collect_states(self, node):
         """Gather all resolved outlet air states for the psychrometric chart."""
