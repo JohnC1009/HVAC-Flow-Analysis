@@ -28,6 +28,15 @@ class PortItem(QGraphicsEllipseItem):
         self.setZValue(2)
         self.setToolTip(f"{port.name} ({port.direction})")
 
+    def mousePressEvent(self, event):
+        if self._is_outlet and event.button() == Qt.LeftButton:
+            scene = self.scene()
+            if scene and hasattr(scene, 'start_connector_drag'):
+                scene.start_connector_drag(self)
+                event.accept()
+                return
+        super().mousePressEvent(event)
+
     def hoverEnterEvent(self, event):
         self.setBrush(QBrush(QColor("#ffcc00")))
         super().hoverEnterEvent(event)
