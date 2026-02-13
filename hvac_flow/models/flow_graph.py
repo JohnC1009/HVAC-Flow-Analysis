@@ -150,8 +150,7 @@ class FlowGraph:
                             )
                             break  # Only report once per node
 
-        try:
-            self.topological_order()
-        except ValueError as e:
-            errors.append(str(e))
+        # Note: cycle detection is NOT performed here.  The FlowSolver
+        # handles cycles via tear-edge iteration, so a cyclic graph is
+        # valid as long as the cycle passes through an iterable inlet.
         return errors
