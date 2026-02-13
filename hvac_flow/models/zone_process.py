@@ -59,7 +59,7 @@ class ZoneProcessNode(BaseNode):
 
         # Humidity ratio rise from latent load
         delta_w = q_latent / (mass_flow * 60 * H_FG_IP)
-        return_w = entering.humidity_ratio + delta_w
+        return_w = max(entering.humidity_ratio + delta_w, 0.0)
 
         leaving = calc.from_db_w(return_db, return_w,
                                  label=f"{self.name} Return")

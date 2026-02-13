@@ -5,6 +5,7 @@ import json
 from hvac_flow.engine.constants import UnitSystem
 from hvac_flow.models.project import Project
 from hvac_flow.models.connector import Connector
+from hvac_flow.solver.control_loop import ControlLoop
 from hvac_flow.models.source_node import SourceNode
 from hvac_flow.models.cooling_coil import CoolingCoilNode
 from hvac_flow.models.heating_coil import HeatingCoilNode
@@ -49,7 +50,7 @@ class ProjectIO:
     @staticmethod
     def save(project: Project, filepath: str) -> None:
         data = {
-            "version": "1.0",
+            "version": "1.1",
             "name": project.name,
             "unit_system": project.unit_system.value,
             "pressure": project.pressure,
@@ -57,6 +58,8 @@ class ProjectIO:
             "nodes": [n.to_dict() for n in project.graph.nodes.values()],
             "connectors": [c.to_dict() for c in project.graph.connectors.values()],
         }
+        if project.control_loops:
+            data["control_loops"] = [cl.to_dict() for cl in project.control_loops]
         with open(filepath, "w") as f:
             json.dump(data, f, indent=2)
 
@@ -81,5 +84,8 @@ class ProjectIO:
         for cd in data.get("connectors", []):
             connector = Connector.from_dict(cd)
             project.graph.add_connector(connector)
+
+        for cld in data.get("control_loops", []):
+            project.control_loops.append(ControlLoop.from_dict(cld))
 
         return project

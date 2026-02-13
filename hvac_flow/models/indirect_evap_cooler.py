@@ -5,6 +5,7 @@ on a secondary (scavenger) airstream. The supply air DB drops with no
 moisture addition — a horizontal line to the left on the psychrometric chart.
 """
 
+from hvac_flow.engine.constants import CP_AIR_IP
 from hvac_flow.models.base_node import BaseNode, Port
 
 
@@ -27,6 +28,9 @@ class IndirectEvapCoolerNode(BaseNode):
         self.boundary_conditions = {
             "cooling_btuh": None,  # Max cooling capacity (Btu/hr)
         }
+
+    def get_iterable_inlet(self):
+        return "secondary_in"
 
     def compute(self, calc) -> None:
         p_in = self.ports["primary_in"].air_state
@@ -56,7 +60,6 @@ class IndirectEvapCoolerNode(BaseNode):
         s_mass = self.ports["secondary_in"].mass_flow
 
         if p_mass and s_mass:
-            from hvac_flow.engine.constants import CP_AIR_IP
             q_removed = p_mass * 60 * CP_AIR_IP * (p_in.dry_bulb - primary_out_db)
             secondary_dt = q_removed / (s_mass * 60 * CP_AIR_IP)
             secondary_out_db = s_in.dry_bulb + secondary_dt

@@ -43,9 +43,15 @@ class PsychroCalc:
     def from_db_rh(self, dry_bulb: float, rel_hum: float,
                    label: str = None) -> AirState:
         """Create AirState from dry-bulb temperature and relative humidity (0-1)."""
-        hr, wb, dp, _vp, h, v, _dos = psychrolib.CalcPsychrometricsFromRelHum(
-            dry_bulb, rel_hum, self._pressure
-        )
+        try:
+            hr, wb, dp, _vp, h, v, _dos = psychrolib.CalcPsychrometricsFromRelHum(
+                dry_bulb, rel_hum, self._pressure
+            )
+        except ValueError as e:
+            raise ValueError(
+                f"Cannot construct air state from DB={dry_bulb:.1f}, "
+                f"RH={rel_hum:.3f}: {e}"
+            ) from e
         return AirState(
             dry_bulb=dry_bulb, humidity_ratio=hr,
             relative_humidity=rel_hum, wet_bulb=wb, dew_point=dp,
@@ -56,12 +62,15 @@ class PsychroCalc:
     def from_db_wb(self, dry_bulb: float, wet_bulb: float,
                    label: str = None) -> AirState:
         """Create AirState from dry-bulb and wet-bulb temperatures."""
-        # CalcPsychrometricsFromTWetBulb returns:
-        # (HumRatio, TDewPoint, RelHum, VapPres, MoistAirEnthalpy,
-        #  MoistAirVolume, DegreeOfSaturation)
-        result = psychrolib.CalcPsychrometricsFromTWetBulb(
-            dry_bulb, wet_bulb, self._pressure
-        )
+        try:
+            result = psychrolib.CalcPsychrometricsFromTWetBulb(
+                dry_bulb, wet_bulb, self._pressure
+            )
+        except ValueError as e:
+            raise ValueError(
+                f"Cannot construct air state from DB={dry_bulb:.1f}, "
+                f"WB={wet_bulb:.1f}: {e}"
+            ) from e
         return AirState(
             dry_bulb=dry_bulb, humidity_ratio=result[0],
             relative_humidity=result[2], wet_bulb=wet_bulb, dew_point=result[1],
@@ -72,11 +81,15 @@ class PsychroCalc:
     def from_db_dp(self, dry_bulb: float, dew_point: float,
                    label: str = None) -> AirState:
         """Create AirState from dry-bulb and dew-point temperatures."""
-        result = psychrolib.CalcPsychrometricsFromTDewPoint(
-            dry_bulb, dew_point, self._pressure
-        )
-        # Returns: (HumRatio, TWetBulb, RelHum, VapPres, MoistAirEnthalpy,
-        #           MoistAirVolume, DegreeOfSaturation)
+        try:
+            result = psychrolib.CalcPsychrometricsFromTDewPoint(
+                dry_bulb, dew_point, self._pressure
+            )
+        except ValueError as e:
+            raise ValueError(
+                f"Cannot construct air state from DB={dry_bulb:.1f}, "
+                f"DP={dew_point:.1f}: {e}"
+            ) from e
         return AirState(
             dry_bulb=dry_bulb, humidity_ratio=result[0],
             relative_humidity=result[2], wet_bulb=result[1],
@@ -87,17 +100,28 @@ class PsychroCalc:
     def from_db_w(self, dry_bulb: float, hum_ratio: float,
                   label: str = None) -> AirState:
         """Create AirState from dry-bulb and humidity ratio."""
-        rh = psychrolib.GetRelHumFromHumRatio(
-            dry_bulb, hum_ratio, self._pressure
-        )
-        wb = psychrolib.GetTWetBulbFromHumRatio(
-            dry_bulb, hum_ratio, self._pressure
-        )
-        dp = psychrolib.GetTDewPointFromHumRatio(
-            dry_bulb, hum_ratio, self._pressure
-        )
-        h = psychrolib.GetMoistAirEnthalpy(dry_bulb, hum_ratio)
-        v = psychrolib.GetMoistAirVolume(dry_bulb, hum_ratio, self._pressure)
+        if hum_ratio < 0:
+            raise ValueError(
+                f"Humidity ratio cannot be negative (got {hum_ratio:.6f}). "
+                f"Check upstream calculations for DB={dry_bulb:.1f}."
+            )
+        try:
+            rh = psychrolib.GetRelHumFromHumRatio(
+                dry_bulb, hum_ratio, self._pressure
+            )
+            wb = psychrolib.GetTWetBulbFromHumRatio(
+                dry_bulb, hum_ratio, self._pressure
+            )
+            dp = psychrolib.GetTDewPointFromHumRatio(
+                dry_bulb, hum_ratio, self._pressure
+            )
+            h = psychrolib.GetMoistAirEnthalpy(dry_bulb, hum_ratio)
+            v = psychrolib.GetMoistAirVolume(dry_bulb, hum_ratio, self._pressure)
+        except ValueError as e:
+            raise ValueError(
+                f"Cannot construct air state from DB={dry_bulb:.1f}, "
+                f"W={hum_ratio:.6f}: {e}"
+            ) from e
         return AirState(
             dry_bulb=dry_bulb, humidity_ratio=hum_ratio,
             relative_humidity=rh, wet_bulb=wb, dew_point=dp,
@@ -108,7 +132,18 @@ class PsychroCalc:
     def from_enthalpy_w(self, enthalpy: float, hum_ratio: float,
                         label: str = None) -> AirState:
         """Create AirState from enthalpy and humidity ratio (used for mixing)."""
-        db = psychrolib.GetTDryBulbFromEnthalpyAndHumRatio(enthalpy, hum_ratio)
+        if hum_ratio < 0:
+            raise ValueError(
+                f"Humidity ratio cannot be negative (got {hum_ratio:.6f}). "
+                f"Check upstream mixing calculations for h={enthalpy:.1f}."
+            )
+        try:
+            db = psychrolib.GetTDryBulbFromEnthalpyAndHumRatio(enthalpy, hum_ratio)
+        except ValueError as e:
+            raise ValueError(
+                f"Cannot determine dry-bulb from h={enthalpy:.1f}, "
+                f"W={hum_ratio:.6f}: {e}"
+            ) from e
         return self.from_db_w(db, hum_ratio, label=label)
 
     # ── Utility ──────────────────────────────────────────────────────

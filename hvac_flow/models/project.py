@@ -13,3 +13,4 @@ class Project:
         self.pressure = STD_ATM_PRESSURE_IP
         self.altitude_ft = 0.0
         self.name = "Untitled Project"
+        self.control_loops = []  # List[ControlLoop] — optional

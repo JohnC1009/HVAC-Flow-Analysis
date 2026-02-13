@@ -35,6 +35,9 @@ class RunaroundLoopNode(BaseNode):
             "sensible_recovery_btuh": None,  # Max recovery capacity (Btu/hr)
         }
 
+    def get_iterable_inlet(self):
+        return "exhaust_in"
+
     def compute(self, calc) -> None:
         s_in = self.ports["supply_in"].air_state
         e_in = self.ports["exhaust_in"].air_state

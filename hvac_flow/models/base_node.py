@@ -109,6 +109,19 @@ class BaseNode(ABC):
         """
         return []
 
+    def get_iterable_inlet(self) -> Optional[str]:
+        """Return the name of an inlet port that can accept an initial guess
+        for cycle-breaking iteration.
+
+        Two-stream devices (enthalpy wheel, sensible HR, desiccant wheel, etc.)
+        override this to return their secondary/exhaust inlet name. The solver
+        uses this to break graph cycles by providing an initial guess on the
+        first pass and iterating until convergence.
+
+        Returns None if this node does not support cycle-breaking.
+        """
+        return None
+
     @property
     def inlet_ports(self) -> List[Port]:
         return [p for p in self.ports.values() if p.direction == "inlet"]

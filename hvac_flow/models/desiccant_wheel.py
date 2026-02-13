@@ -34,6 +34,9 @@ class DesiccantWheelNode(BaseNode):
             "moisture_removed_lb_hr": None,  # Max moisture removal (lb/hr)
         }
 
+    def get_iterable_inlet(self):
+        return "regen_in"
+
     def compute(self, calc) -> None:
         p_in = self.ports["process_in"].air_state
         r_in = self.ports["regen_in"].air_state
@@ -66,6 +69,13 @@ class DesiccantWheelNode(BaseNode):
         delta_t_carryover = max(delta_t_carryover, 0.0)
 
         process_out_db = p_in.dry_bulb + delta_t_adsorption + delta_t_carryover
+
+        # Clamp W to valid range
+        process_out_w = max(process_out_w, 0.0)
+        w_sat = calc.get_saturation_humidity_ratio(process_out_db)
+        if process_out_w > w_sat:
+            process_out_w = w_sat
+
         process_out = calc.from_db_w(process_out_db, process_out_w,
                                      label=f"{self.name} Process Out")
 
@@ -77,6 +87,12 @@ class DesiccantWheelNode(BaseNode):
         else:
             regen_out_w = r_in.humidity_ratio
             regen_out_db = r_in.dry_bulb
+
+        # Clamp regen W to valid range
+        regen_out_w = max(regen_out_w, 0.0)
+        w_sat_regen = calc.get_saturation_humidity_ratio(regen_out_db)
+        if regen_out_w > w_sat_regen:
+            regen_out_w = w_sat_regen
 
         regen_out = calc.from_db_w(regen_out_db, regen_out_w,
                                    label=f"{self.name} Regen Out")
