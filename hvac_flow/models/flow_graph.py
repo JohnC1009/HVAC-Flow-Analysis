@@ -87,7 +87,9 @@ class FlowGraph:
     def topological_order(self) -> List[BaseNode]:
         """Return nodes in dependency order (upstream before downstream).
 
-        Raises ValueError if the graph contains a cycle.
+        If the graph contains a cycle the returned list will be shorter
+        than ``len(self.nodes)`` (only the acyclic portion is included).
+        Callers that need to detect this can compare lengths.
         """
         # Build in-degree map based on connected inlet ports
         in_degree: Dict[str, int] = {nid: 0 for nid in self.nodes}
@@ -106,8 +108,6 @@ class FlowGraph:
                 if in_degree[c.target_node_id] == 0:
                     queue.append(c.target_node_id)
 
-        if len(order) != len(self.nodes):
-            raise ValueError("Graph contains a cycle — cannot solve.")
         return order
 
     # ── Validation ───────────────────────────────────────────────────

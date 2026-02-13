@@ -58,12 +58,8 @@ class FlowSolver:
             return False
 
         # Determine solve strategy
-        try:
-            order = self.graph.topological_order()
-            has_cycle = False
-        except ValueError:
-            has_cycle = True
-            order = None
+        order = self.graph.topological_order()
+        has_cycle = len(order) != len(self.graph.nodes)
 
         active_loops = [cl for cl in self.control_loops if cl.enabled]
 
