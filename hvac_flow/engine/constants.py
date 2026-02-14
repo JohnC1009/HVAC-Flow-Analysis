@@ -25,3 +25,6 @@ HP_TO_BTUH = 2545.0
 
 # Conversion: 1 ton refrigeration = 12000 Btu/hr
 TON_TO_BTUH = 12000.0
+
+# Fan law: BHP = CFM × ΔP_inWG / (6356 × η_fan)
+FAN_CONSTANT_IP = 6356.0  # ft³·inWG/min to HP

@@ -28,6 +28,8 @@ class RunaroundLoopNode(BaseNode):
             "sensible_effectiveness": 0.55,
             "glycol_concentration_pct": 30.0,
             "glycol_flow_gpm": 50.0,
+            "supply_pressure_drop_iw": 0.0,
+            "exhaust_pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -86,11 +88,22 @@ class RunaroundLoopNode(BaseNode):
         self.ports["exhaust_out"].air_state = exhaust_out
         self.ports["exhaust_out"].mass_flow = e_mass
 
+        supply_in_cfm = s_mass * s_in.specific_volume if s_mass else 0
+        supply_out_cfm = s_mass * supply_out.specific_volume if s_mass else 0
+        exhaust_in_cfm = e_mass * e_in.specific_volume if e_mass else 0
+        exhaust_out_cfm = e_mass * exhaust_out.specific_volume if e_mass else 0
+
         self.results = {
             "supply_out_state": supply_out,
             "exhaust_out_state": exhaust_out,
             "sensible_recovery_btuh": q_recovered,
             "sensible_recovery_tons": q_recovered / 12000.0 if q_recovered else 0,
+            "supply_in_cfm": supply_in_cfm,
+            "supply_out_cfm": supply_out_cfm,
+            "exhaust_in_cfm": exhaust_in_cfm,
+            "exhaust_out_cfm": exhaust_out_cfm,
+            "supply_pressure_drop_iw": self.parameters["supply_pressure_drop_iw"],
+            "exhaust_pressure_drop_iw": self.parameters["exhaust_pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -104,6 +117,12 @@ class RunaroundLoopNode(BaseNode):
             {"name": "glycol_flow_gpm", "type": "float",
              "min": 0, "max": 1000, "unit": "GPM",
              "tooltip": "Glycol loop flow rate (informational)"},
+            {"name": "supply_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Supply-side coil pressure drop"},
+            {"name": "exhaust_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Exhaust-side coil pressure drop"},
         ]
 
     def get_boundary_definitions(self):

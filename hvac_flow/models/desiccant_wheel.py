@@ -27,6 +27,8 @@ class DesiccantWheelNode(BaseNode):
         self.parameters = {
             "dehumidification_effectiveness": 0.75,
             "heat_carryover_fraction": 0.10,
+            "process_pressure_drop_iw": 0.0,
+            "regen_pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -105,12 +107,23 @@ class DesiccantWheelNode(BaseNode):
         moisture_removed = delta_w * p_mass * 60 if p_mass else 0  # lb/hr
         grains_removed = moisture_removed * 7000  # grains/hr
 
+        process_in_cfm = p_mass * p_in.specific_volume if p_mass else 0
+        process_out_cfm = p_mass * process_out.specific_volume if p_mass else 0
+        regen_in_cfm = r_mass * r_in.specific_volume if r_mass else 0
+        regen_out_cfm = r_mass * regen_out.specific_volume if r_mass else 0
+
         self.results = {
             "process_out_state": process_out,
             "regen_out_state": regen_out,
             "moisture_removed_lb_hr": moisture_removed,
             "moisture_removed_grains_hr": grains_removed,
             "process_db_rise_f": process_out_db - p_in.dry_bulb,
+            "process_in_cfm": process_in_cfm,
+            "process_out_cfm": process_out_cfm,
+            "regen_in_cfm": regen_in_cfm,
+            "regen_out_cfm": regen_out_cfm,
+            "process_pressure_drop_iw": self.parameters["process_pressure_drop_iw"],
+            "regen_pressure_drop_iw": self.parameters["regen_pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -121,6 +134,12 @@ class DesiccantWheelNode(BaseNode):
             {"name": "heat_carryover_fraction", "type": "float",
              "min": 0.0, "max": 0.5, "unit": "fraction",
              "tooltip": "Fraction of regen heat carried over to process side"},
+            {"name": "process_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Process-side pressure drop across wheel"},
+            {"name": "regen_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Regen-side pressure drop across wheel"},
         ]
 
     def get_boundary_definitions(self):

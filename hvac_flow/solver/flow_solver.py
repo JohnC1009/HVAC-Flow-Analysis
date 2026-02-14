@@ -7,7 +7,7 @@ Supports three modes of operation:
 """
 
 from collections import deque
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from hvac_flow.engine.air_state import AirState
 from hvac_flow.engine.psychro_calc import PsychroCalc
@@ -43,6 +43,7 @@ class FlowSolver:
         self.node_errors: Dict[str, List[str]] = {}   # node_id -> errors
         self.node_warnings: Dict[str, List[str]] = {}  # node_id -> warnings
         self.control_loops: List[ControlLoop] = []
+        self.pressure_summary: Dict[str, Any] = {}  # pressure drop per node/connector
 
     def solve(self) -> bool:
         """Run a full solve pass.
@@ -65,7 +66,10 @@ class FlowSolver:
 
         if not has_cycle and not active_loops:
             # Fast path: single-pass DAG
-            return self._solve_pass(order)
+            success = self._solve_pass(order)
+            if success:
+                self._compute_pressure_summary()
+            return success
 
         if has_cycle:
             # Find tear edges to break cycles
@@ -83,7 +87,10 @@ class FlowSolver:
         else:
             tear_connector_ids = set()
 
-        return self._solve_iterative(order, tear_connector_ids, active_loops)
+        success = self._solve_iterative(order, tear_connector_ids, active_loops)
+        if success:
+            self._compute_pressure_summary()
+        return success
 
     # ── Single-pass solve ────────────────────────────────────────────
 
@@ -448,6 +455,7 @@ class FlowSolver:
         self.all_states.clear()
         self.node_errors.clear()
         self.node_warnings.clear()
+        self.pressure_summary.clear()
 
     def _clear_pass_state(self):
         """Reset per-pass state for a new iteration.
@@ -499,3 +507,40 @@ class FlowSolver:
         for port in node.outlet_ports:
             if port.air_state is not None:
                 self.all_states.append(port.air_state)
+
+    # ── Pressure drop summary ────────────────────────────────────────
+
+    def _compute_pressure_summary(self):
+        """Collect pressure drop values from all nodes and connectors."""
+        self.pressure_summary = {
+            "nodes": {},
+            "connectors": {},
+            "total_node_pressure_drop_iw": 0.0,
+            "total_connector_pressure_drop_iw": 0.0,
+        }
+        total_node = 0.0
+        total_conn = 0.0
+
+        for node_id, node in self.graph.nodes.items():
+            # Collect all pressure_drop keys from results
+            drops = {}
+            for key, val in node.results.items():
+                if "pressure_drop_iw" in key and isinstance(val, (int, float)):
+                    drops[key] = val
+                    total_node += val
+            if drops:
+                self.pressure_summary["nodes"][node_id] = {
+                    "name": node.name,
+                    **drops,
+                }
+
+        for conn_id, conn in self.graph.connectors.items():
+            if conn.pressure_drop_iw > 0:
+                total_conn += conn.pressure_drop_iw
+                self.pressure_summary["connectors"][conn_id] = {
+                    "pressure_drop_iw": conn.pressure_drop_iw,
+                }
+
+        self.pressure_summary["total_node_pressure_drop_iw"] = total_node
+        self.pressure_summary["total_connector_pressure_drop_iw"] = total_conn
+        self.pressure_summary["total_system_pressure_drop_iw"] = total_node + total_conn

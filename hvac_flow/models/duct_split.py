@@ -15,6 +15,7 @@ class DuctSplitNode(BaseNode):
     def _init_parameters(self):
         self.parameters = {
             "split_fraction": 0.50,
+            "pressure_drop_iw": 0.0,
         }
 
     def compute(self, calc) -> None:
@@ -40,9 +41,17 @@ class DuctSplitNode(BaseNode):
         self.ports["outlet_b"].air_state = state_b
         self.ports["outlet_b"].mass_flow = mass_flow * (1 - f)
 
+        inlet_cfm = mass_flow * entering.specific_volume
+        outlet_a_cfm = mass_flow * f * entering.specific_volume
+        outlet_b_cfm = mass_flow * (1 - f) * entering.specific_volume
+
         self.results = {
             "outlet_a_flow": mass_flow * f,
             "outlet_b_flow": mass_flow * (1 - f),
+            "inlet_cfm": inlet_cfm,
+            "outlet_a_cfm": outlet_a_cfm,
+            "outlet_b_cfm": outlet_b_cfm,
+            "pressure_drop_iw": self.parameters["pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -50,4 +59,7 @@ class DuctSplitNode(BaseNode):
             {"name": "split_fraction", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Fraction of flow to outlet A (remainder to B)"},
+            {"name": "pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Fitting pressure drop at split point"},
         ]

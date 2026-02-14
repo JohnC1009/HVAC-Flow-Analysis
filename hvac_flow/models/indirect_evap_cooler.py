@@ -22,6 +22,8 @@ class IndirectEvapCoolerNode(BaseNode):
     def _init_parameters(self):
         self.parameters = {
             "wet_bulb_effectiveness": 0.70,
+            "primary_pressure_drop_iw": 0.0,
+            "secondary_pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -78,11 +80,22 @@ class IndirectEvapCoolerNode(BaseNode):
             p_mass * 60 * (p_in.enthalpy - primary_out.enthalpy) if p_mass else 0
         )
 
+        primary_in_cfm = p_mass * p_in.specific_volume if p_mass else 0
+        primary_out_cfm = p_mass * primary_out.specific_volume if p_mass else 0
+        secondary_in_cfm = s_mass * s_in.specific_volume if s_mass else 0
+        secondary_out_cfm = s_mass * secondary_out.specific_volume if s_mass else 0
+
         self.results = {
             "primary_out_state": primary_out,
             "secondary_out_state": secondary_out,
             "cooling_btuh": cooling_btuh,
             "primary_db_drop_f": p_in.dry_bulb - primary_out_db,
+            "primary_in_cfm": primary_in_cfm,
+            "primary_out_cfm": primary_out_cfm,
+            "secondary_in_cfm": secondary_in_cfm,
+            "secondary_out_cfm": secondary_out_cfm,
+            "primary_pressure_drop_iw": self.parameters["primary_pressure_drop_iw"],
+            "secondary_pressure_drop_iw": self.parameters["secondary_pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -90,6 +103,12 @@ class IndirectEvapCoolerNode(BaseNode):
             {"name": "wet_bulb_effectiveness", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Wet-bulb effectiveness (how close primary DB gets to secondary WB)"},
+            {"name": "primary_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Primary-side pressure drop"},
+            {"name": "secondary_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Secondary-side pressure drop"},
         ]
 
     def get_boundary_definitions(self):

@@ -63,6 +63,8 @@ class SourceNode(BaseNode):
         self.results = {
             "outlet_state": state,
             "mass_flow_lb_min": self.ports["outlet"].mass_flow,
+            "cfm": cfm,
+            "density_lb_ft3": density,
         }
 
     def get_param_definitions(self):

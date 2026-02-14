@@ -22,6 +22,7 @@ class ZoneProcessNode(BaseNode):
             "latent_load_btuh": 30000.0,
             "total_load_btuh": 150000.0,
             "sensible_heat_ratio": 0.80,
+            "pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -66,6 +67,9 @@ class ZoneProcessNode(BaseNode):
 
         actual_shr = q_sensible / (q_sensible + q_latent) if (q_sensible + q_latent) else 0
 
+        supply_cfm = mass_flow * entering.specific_volume
+        return_cfm = mass_flow * leaving.specific_volume
+
         self.ports["return_air"].air_state = leaving
         self.ports["return_air"].mass_flow = mass_flow
         self.results = {
@@ -75,6 +79,9 @@ class ZoneProcessNode(BaseNode):
             "total_load_btuh": q_sensible + q_latent,
             "shr": actual_shr,
             "delta_t_f": delta_t,
+            "supply_cfm": supply_cfm,
+            "return_cfm": return_cfm,
+            "pressure_drop_iw": self.parameters["pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -94,6 +101,9 @@ class ZoneProcessNode(BaseNode):
             {"name": "sensible_heat_ratio", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Sensible heat ratio (SHR mode)"},
+            {"name": "pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Supply-side pressure drop (diffuser + ductwork to zone)"},
         ]
 
     def get_boundary_definitions(self):

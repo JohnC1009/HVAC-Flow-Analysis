@@ -20,6 +20,9 @@ class Connector:
     duct_ua: float = 0.0       # Btu/(hr·°F) overall UA value
     ambient_temp: float = 85.0  # °F surrounding temperature
 
+    # Duct pressure drop
+    pressure_drop_iw: float = 0.0  # inWG — duct friction + fitting losses
+
     def apply_duct_loss(self, state, mass_flow, calc):
         """Apply sensible heat gain/loss through the duct (humidity ratio constant).
 
@@ -42,6 +45,7 @@ class Connector:
             "model_duct_losses": self.model_duct_losses,
             "duct_ua": self.duct_ua,
             "ambient_temp": self.ambient_temp,
+            "pressure_drop_iw": self.pressure_drop_iw,
         }
 
     @classmethod
@@ -55,4 +59,5 @@ class Connector:
             model_duct_losses=data.get("model_duct_losses", False),
             duct_ua=data.get("duct_ua", 0.0),
             ambient_temp=data.get("ambient_temp", 85.0),
+            pressure_drop_iw=data.get("pressure_drop_iw", 0.0),
         )

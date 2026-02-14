@@ -18,6 +18,8 @@ class EnthalpyWheelNode(BaseNode):
             "sensible_effectiveness": 0.75,
             "latent_effectiveness": 0.70,
             "bypass_fraction": 0.0,
+            "supply_pressure_drop_iw": 0.0,
+            "exhaust_pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -80,11 +82,23 @@ class EnthalpyWheelNode(BaseNode):
         sensible_recovery = (s_mass * 60 *
                              (supply_out.enthalpy - s_in.enthalpy)
                              if s_mass else 0)
+
+        supply_in_cfm = s_mass * s_in.specific_volume if s_mass else 0
+        supply_out_cfm = s_mass * supply_out.specific_volume if s_mass else 0
+        exhaust_in_cfm = e_mass * e_in.specific_volume if e_mass else 0
+        exhaust_out_cfm = e_mass * exhaust_out.specific_volume if e_mass else 0
+
         self.results = {
             "supply_out_state": supply_out,
             "exhaust_out_state": exhaust_out,
             "sensible_recovery_btuh": sensible_recovery,
             "bypass_fraction": bypass,
+            "supply_in_cfm": supply_in_cfm,
+            "supply_out_cfm": supply_out_cfm,
+            "exhaust_in_cfm": exhaust_in_cfm,
+            "exhaust_out_cfm": exhaust_out_cfm,
+            "supply_pressure_drop_iw": self.parameters["supply_pressure_drop_iw"],
+            "exhaust_pressure_drop_iw": self.parameters["exhaust_pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -98,6 +112,12 @@ class EnthalpyWheelNode(BaseNode):
             {"name": "bypass_fraction", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Fraction of supply air bypassing the wheel (0 = all through wheel)"},
+            {"name": "supply_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Supply-side pressure drop across wheel"},
+            {"name": "exhaust_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Exhaust-side pressure drop across wheel"},
         ]
 
     def get_boundary_definitions(self):

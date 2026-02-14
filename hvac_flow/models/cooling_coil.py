@@ -18,6 +18,7 @@ class CoolingCoilNode(BaseNode):
             "leaving_mode": "rh",
             "leaving_rh": 0.90,
             "leaving_w": 0.008,
+            "pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -61,6 +62,9 @@ class CoolingCoilNode(BaseNode):
         sensible_load = mass_flow * delta_h_sensible * 60
         latent_load = total_load - sensible_load
 
+        entering_cfm = mass_flow * entering.specific_volume
+        leaving_cfm = mass_flow * leaving.specific_volume
+
         self.ports["outlet"].air_state = leaving
         self.ports["outlet"].mass_flow = mass_flow
         self.results = {
@@ -70,6 +74,9 @@ class CoolingCoilNode(BaseNode):
             "latent_load_btuh": latent_load,
             "total_load_tons": total_load / 12000.0,
             "shr": sensible_load / total_load if total_load else 0.0,
+            "entering_cfm": entering_cfm,
+            "leaving_cfm": leaving_cfm,
+            "pressure_drop_iw": self.parameters["pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -83,6 +90,9 @@ class CoolingCoilNode(BaseNode):
              "unit": "fraction", "tooltip": "Leaving relative humidity"},
             {"name": "leaving_w", "type": "float", "min": 0.0, "max": 0.03,
              "unit": "lb/lb", "tooltip": "Leaving humidity ratio"},
+            {"name": "pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Air-side pressure drop across coil"},
         ]
 
     def get_boundary_definitions(self):

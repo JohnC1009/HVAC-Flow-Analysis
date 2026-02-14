@@ -22,6 +22,8 @@ class SensibleHeatRecoveryNode(BaseNode):
             "sensible_effectiveness": 0.65,
             "device_type": "plate_exchanger",  # informational label
             "bypass_fraction": 0.0,
+            "supply_pressure_drop_iw": 0.0,
+            "exhaust_pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -79,11 +81,22 @@ class SensibleHeatRecoveryNode(BaseNode):
             if s_mass else 0
         )
 
+        supply_in_cfm = s_mass * s_in.specific_volume if s_mass else 0
+        supply_out_cfm = s_mass * supply_out.specific_volume if s_mass else 0
+        exhaust_in_cfm = e_mass * e_in.specific_volume if e_mass else 0
+        exhaust_out_cfm = e_mass * exhaust_out.specific_volume if e_mass else 0
+
         self.results = {
             "supply_out_state": supply_out,
             "exhaust_out_state": exhaust_out,
             "sensible_recovery_btuh": sensible_recovery,
             "bypass_fraction": bypass,
+            "supply_in_cfm": supply_in_cfm,
+            "supply_out_cfm": supply_out_cfm,
+            "exhaust_in_cfm": exhaust_in_cfm,
+            "exhaust_out_cfm": exhaust_out_cfm,
+            "supply_pressure_drop_iw": self.parameters["supply_pressure_drop_iw"],
+            "exhaust_pressure_drop_iw": self.parameters["exhaust_pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -97,6 +110,12 @@ class SensibleHeatRecoveryNode(BaseNode):
             {"name": "bypass_fraction", "type": "float",
              "min": 0.0, "max": 1.0, "unit": "fraction",
              "tooltip": "Fraction of supply air bypassing the device (0 = all through device)"},
+            {"name": "supply_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Supply-side pressure drop across device"},
+            {"name": "exhaust_pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Exhaust-side pressure drop across device"},
         ]
 
     def get_boundary_definitions(self):

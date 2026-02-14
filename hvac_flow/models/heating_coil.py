@@ -14,6 +14,7 @@ class HeatingCoilNode(BaseNode):
     def _init_parameters(self):
         self.parameters = {
             "leaving_db": 105.0,
+            "pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -47,17 +48,26 @@ class HeatingCoilNode(BaseNode):
 
         sensible_load = mass_flow * (leaving.enthalpy - entering.enthalpy) * 60
 
+        entering_cfm = mass_flow * entering.specific_volume
+        leaving_cfm = mass_flow * leaving.specific_volume
+
         self.ports["outlet"].air_state = leaving
         self.ports["outlet"].mass_flow = mass_flow
         self.results = {
             "outlet_state": leaving,
             "sensible_load_btuh": sensible_load,
+            "entering_cfm": entering_cfm,
+            "leaving_cfm": leaving_cfm,
+            "pressure_drop_iw": self.parameters["pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
         return [
             {"name": "leaving_db", "type": "float", "min": 30, "max": 200,
              "unit": "°F", "tooltip": "Leaving dry-bulb temperature"},
+            {"name": "pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Air-side pressure drop across coil"},
         ]
 
     def get_boundary_definitions(self):

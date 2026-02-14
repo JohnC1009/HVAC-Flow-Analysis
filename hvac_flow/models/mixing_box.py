@@ -20,6 +20,7 @@ class MixingBoxNode(BaseNode):
             "econ_high_limit_db": 65.0,   # °F — OA lockout above this DB
             "econ_high_limit_h": 28.0,    # Btu/lb — OA lockout above this enthalpy
             "supply_setpoint_db": 55.0,   # °F — target mixed-air temp for economizer
+            "pressure_drop_iw": 0.0,
         }
 
     def compute(self, calc) -> None:
@@ -46,6 +47,12 @@ class MixingBoxNode(BaseNode):
 
         total_mass = (p.mass_flow or 0) + (s.mass_flow or 0)
 
+        primary_cfm = (p.mass_flow * p.air_state.specific_volume
+                       if p.mass_flow else 0)
+        secondary_cfm = (s.mass_flow * s.air_state.specific_volume
+                         if s.mass_flow else 0)
+        mixed_cfm = total_mass * mixed_state.specific_volume if total_mass else 0
+
         self.ports["mixed"].air_state = mixed_state
         self.ports["mixed"].mass_flow = total_mass
         self.results = {
@@ -54,6 +61,10 @@ class MixingBoxNode(BaseNode):
             "mixed_db": mixed_state.dry_bulb,
             "mixed_rh": mixed_state.relative_humidity,
             "effective_oa_fraction": f,
+            "primary_cfm": primary_cfm,
+            "secondary_cfm": secondary_cfm,
+            "mixed_cfm": mixed_cfm,
+            "pressure_drop_iw": self.parameters["pressure_drop_iw"],
         }
 
     def _determine_oa_fraction(self, primary, secondary):
@@ -108,4 +119,7 @@ class MixingBoxNode(BaseNode):
             {"name": "supply_setpoint_db", "type": "float",
              "min": 40, "max": 80, "unit": "°F",
              "tooltip": "Target mixed-air temperature when economizer is active"},
+            {"name": "pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Pressure drop across mixing box dampers/filters"},
         ]

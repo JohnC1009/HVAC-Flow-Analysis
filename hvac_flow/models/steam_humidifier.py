@@ -20,6 +20,7 @@ class SteamHumidifierNode(BaseNode):
             "target_rh": 0.40,
             "target_w": 0.006,
             "steam_rate_lb_hr": 50.0,
+            "pressure_drop_iw": 0.0,
         }
 
     def _init_boundary_conditions(self):
@@ -60,12 +61,18 @@ class SteamHumidifierNode(BaseNode):
         steam_consumed = (target_w - entering.humidity_ratio) * mass_flow * 60
         steam_consumed = max(steam_consumed, 0.0)
 
+        entering_cfm = mass_flow * entering.specific_volume
+        leaving_cfm = mass_flow * leaving.specific_volume
+
         self.ports["outlet"].air_state = leaving
         self.ports["outlet"].mass_flow = mass_flow
         self.results = {
             "outlet_state": leaving,
             "steam_consumption_lb_hr": steam_consumed,
             "delta_w": target_w - entering.humidity_ratio,
+            "entering_cfm": entering_cfm,
+            "leaving_cfm": leaving_cfm,
+            "pressure_drop_iw": self.parameters["pressure_drop_iw"],
         }
 
     def get_param_definitions(self):
@@ -82,6 +89,9 @@ class SteamHumidifierNode(BaseNode):
             {"name": "steam_rate_lb_hr", "type": "float",
              "min": 0, "max": 10000, "unit": "lb/hr",
              "tooltip": "Fixed steam injection rate"},
+            {"name": "pressure_drop_iw", "type": "float", "min": 0.0,
+             "max": 10.0, "unit": "inWG",
+             "tooltip": "Air-side pressure drop across humidifier"},
         ]
 
     def get_boundary_definitions(self):
