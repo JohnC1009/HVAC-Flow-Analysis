@@ -20,6 +20,9 @@ STD_AIR_DENSITY_SI = 1.204  # kg_da / m^3 (at 20C, 101325 Pa)
 CP_AIR_IP = 0.24   # Btu/(lb·°F)
 CP_AIR_SI = 1.006  # kJ/(kg·°C)
 
+# Latent heat of vaporization / adsorption (h_fg) at typical HVAC conditions
+H_FG_IP = 1061.0  # Btu/lb_water
+
 # Conversion: 1 HP = 2545 Btu/hr
 HP_TO_BTUH = 2545.0
 

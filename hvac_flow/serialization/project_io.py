@@ -5,42 +5,7 @@ import json
 from hvac_flow.engine.constants import UnitSystem
 from hvac_flow.models.project import Project
 from hvac_flow.models.connector import Connector
-from hvac_flow.models.source_node import SourceNode
-from hvac_flow.models.cooling_coil import CoolingCoilNode
-from hvac_flow.models.heating_coil import HeatingCoilNode
-from hvac_flow.models.fan import FanNode
-from hvac_flow.models.enthalpy_wheel import EnthalpyWheelNode
-from hvac_flow.models.mixing_box import MixingBoxNode
-from hvac_flow.models.zone_process import ZoneProcessNode
-from hvac_flow.models.duct_split import DuctSplitNode
-from hvac_flow.models.steam_humidifier import SteamHumidifierNode
-from hvac_flow.models.adiabatic_humidifier import AdiabaticHumidifierNode
-from hvac_flow.models.sensible_heat_recovery import SensibleHeatRecoveryNode
-from hvac_flow.models.runaround_loop import RunaroundLoopNode
-from hvac_flow.models.indirect_evap_cooler import IndirectEvapCoolerNode
-from hvac_flow.models.desiccant_wheel import DesiccantWheelNode
-from hvac_flow.models.return_fan import ReturnFanNode
-from hvac_flow.models.air_sink import AirSinkNode
-
-
-NODE_TYPE_MAP = {
-    "source": SourceNode,
-    "cooling_coil": CoolingCoilNode,
-    "heating_coil": HeatingCoilNode,
-    "fan": FanNode,
-    "enthalpy_wheel": EnthalpyWheelNode,
-    "mixing_box": MixingBoxNode,
-    "zone_process": ZoneProcessNode,
-    "duct_split": DuctSplitNode,
-    "steam_humidifier": SteamHumidifierNode,
-    "adiabatic_humidifier": AdiabaticHumidifierNode,
-    "sensible_hr": SensibleHeatRecoveryNode,
-    "runaround_loop": RunaroundLoopNode,
-    "indirect_evap_cooler": IndirectEvapCoolerNode,
-    "desiccant_wheel": DesiccantWheelNode,
-    "return_fan": ReturnFanNode,
-    "air_sink": AirSinkNode,
-}
+from hvac_flow.models import NodeFactory
 
 
 class ProjectIO:
@@ -71,8 +36,9 @@ class ProjectIO:
         project.pressure = data.get("pressure", 14.696)
         project.altitude_ft = data.get("altitude_ft", 0.0)
 
+        node_type_map = NodeFactory.get_types()
         for nd in data.get("nodes", []):
-            cls = NODE_TYPE_MAP.get(nd["type"])
+            cls = node_type_map.get(nd["type"])
             if cls is None:
                 continue
             node = cls.from_dict(nd)

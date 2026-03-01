@@ -1,7 +1,5 @@
 """Main application window — assembles toolbox, canvas, property panel, and chart."""
 
-import json
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence, QFont
 from PyQt5.QtWidgets import (QMainWindow, QSplitter, QToolBar, QAction,
@@ -140,24 +138,16 @@ class MainWindow(QMainWindow):
                 self.property_panel.show_node(node_items[0].node)
 
             # Show capacity warnings if any
+            n_states = len(self.solver.all_states)
+            n_warnings = len(self.solver.warnings)
+            suffix = f" | {n_warnings} warning(s)" if n_warnings else ""
+            self._status_label.setText(f"Solved — {n_states} state points{suffix}")
             if self.solver.warnings:
-                status_parts = [
-                    f"Solved — {len(self.solver.all_states)} state points"
-                ]
-                warning_count = len(self.solver.warnings)
-                status_parts.append(
-                    f" | {warning_count} warning(s)"
-                )
-                self._status_label.setText("".join(status_parts))
                 QMessageBox.information(
                     self, "Solver Warnings — Boundary Conditions Exceeded",
                     "The system solved successfully, but the following "
                     "boundary conditions were exceeded:\n\n"
                     + "\n".join(self.solver.warnings)
-                )
-            else:
-                self._status_label.setText(
-                    f"Solved — {len(self.solver.all_states)} state points"
                 )
         else:
             QMessageBox.warning(

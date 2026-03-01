@@ -2,9 +2,6 @@
 
 from hvac_flow.models.base_node import BaseNode, Port
 
-# Enthalpy of saturated steam at ~212°F
-STEAM_ENTHALPY_DEFAULT = 1150.0  # Btu/lb
-
 
 class SteamHumidifierNode(BaseNode):
     NODE_TYPE = "steam_humidifier"
@@ -50,7 +47,7 @@ class SteamHumidifierNode(BaseNode):
             target_w = self.parameters["target_w"]
         else:
             steam_mass_per_min = self.parameters["steam_rate_lb_hr"] / 60.0
-            delta_w = steam_mass_per_min / mass_flow if mass_flow else 0
+            delta_w = steam_mass_per_min / mass_flow
             target_w = entering.humidity_ratio + delta_w
 
         # Isothermal: DB stays essentially constant

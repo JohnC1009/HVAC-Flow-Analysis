@@ -1,10 +1,7 @@
 """Zone / Room Process node — models sensible + latent heat gain from occupied space."""
 
-from hvac_flow.engine.constants import CP_AIR_IP
+from hvac_flow.engine.constants import CP_AIR_IP, H_FG_IP
 from hvac_flow.models.base_node import BaseNode, Port
-
-# Latent heat of vaporization at typical HVAC conditions
-H_FG_IP = 1061.0  # Btu/lb_water
 
 
 class ZoneProcessNode(BaseNode):

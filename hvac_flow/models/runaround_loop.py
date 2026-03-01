@@ -9,7 +9,7 @@ the intermediate glycol loop, but allows the supply and exhaust ducts to
 be in completely different locations.
 """
 
-from hvac_flow.engine.constants import CP_AIR_IP
+from hvac_flow.engine.constants import CP_AIR_IP, TON_TO_BTUH
 from hvac_flow.models.base_node import BaseNode, Port
 
 
@@ -61,7 +61,6 @@ class RunaroundLoopNode(BaseNode):
             c_supply = s_mass * 60 * CP_AIR_IP   # Btu/(hr·°F)
             c_exhaust = e_mass * 60 * CP_AIR_IP
             c_min = min(c_supply, c_exhaust)
-            c_max = max(c_supply, c_exhaust)
 
             q_recovered = eps * c_min * (e_in.dry_bulb - s_in.dry_bulb)
 
@@ -87,7 +86,7 @@ class RunaroundLoopNode(BaseNode):
             "supply_out_state": supply_out,
             "exhaust_out_state": exhaust_out,
             "sensible_recovery_btuh": q_recovered,
-            "sensible_recovery_tons": q_recovered / 12000.0 if q_recovered else 0,
+            "sensible_recovery_tons": q_recovered / TON_TO_BTUH if q_recovered else 0,
         }
 
     def get_param_definitions(self):

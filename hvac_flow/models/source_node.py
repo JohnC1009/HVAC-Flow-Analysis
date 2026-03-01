@@ -54,8 +54,10 @@ class SourceNode(BaseNode):
                 )
             state = calc.from_db_dp(db, dp, label=self.name)
         else:
-            state = calc.from_db_rh(db, self.parameters["relative_humidity"],
-                                    label=self.name)
+            raise ValueError(
+                f"[{self.name}] Unknown input_mode '{mode}' — "
+                f"expected one of: db_rh, db_wb, db_dp."
+            )
 
         self.ports["outlet"].air_state = state
         density = calc.get_moist_air_density(state)

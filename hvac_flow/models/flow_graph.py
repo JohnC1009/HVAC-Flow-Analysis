@@ -126,32 +126,18 @@ class FlowGraph:
         for node in self.nodes.values():
             for port in node.inlet_ports:
                 if port.connected_to is None:
-                    # Only error if the node isn't a source type
-                    if node.inlet_ports:
-                        errors.append(
-                            f"[{node.name}] Inlet port '{port.name}' "
-                            f"is not connected."
-                        )
+                    errors.append(
+                        f"[{node.name}] Inlet port '{port.name}' "
+                        f"is not connected."
+                    )
 
-            # Check for outlet ports that should be connected
-            for port in node.outlet_ports:
-                if port.connected_to is None:
-                    # Not necessarily an error, but warn for non-sink nodes
-                    from hvac_flow.models.air_sink import AirSinkNode
-                    if not isinstance(node, AirSinkNode):
-                        has_any_connected_outlet = any(
-                            p.connected_to is not None
-                            for p in node.outlet_ports
-                        )
-                        if not has_any_connected_outlet:
-                            errors.append(
-                                f"[{node.name}] No outlet ports are "
-                                f"connected — node output is unused."
-                            )
-                            break  # Only report once per node
+            # Warn if a non-sink node has no connected outlet ports at all
+            if node.outlet_ports and not any(
+                p.connected_to is not None for p in node.outlet_ports
+            ):
+                errors.append(
+                    f"[{node.name}] No outlet ports are "
+                    f"connected — node output is unused."
+                )
 
-        try:
-            self.topological_order()
-        except ValueError as e:
-            errors.append(str(e))
         return errors

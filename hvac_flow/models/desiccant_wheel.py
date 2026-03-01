@@ -6,11 +6,8 @@ moves down and to the right. A regeneration airstream (heated externally) drives
 moisture off the wheel and is exhausted.
 """
 
-from hvac_flow.engine.constants import CP_AIR_IP
+from hvac_flow.engine.constants import CP_AIR_IP, H_FG_IP
 from hvac_flow.models.base_node import BaseNode, Port
-
-# Approximate heat of adsorption for silica gel / molecular sieve
-H_ADSORPTION_IP = 1061.0  # Btu/lb_water (close to h_fg of water)
 
 
 class DesiccantWheelNode(BaseNode):
@@ -59,7 +56,7 @@ class DesiccantWheelNode(BaseNode):
         process_out_w = p_in.humidity_ratio - delta_w
 
         # DB rise from heat of adsorption
-        delta_t_adsorption = H_ADSORPTION_IP * delta_w / CP_AIR_IP
+        delta_t_adsorption = H_FG_IP * delta_w / CP_AIR_IP
 
         # Additional heat carryover from hot regen side of wheel
         delta_t_carryover = carryover * (r_in.dry_bulb - p_in.dry_bulb)

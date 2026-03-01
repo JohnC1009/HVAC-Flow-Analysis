@@ -35,6 +35,16 @@ class MixingBoxNode(BaseNode):
                 f"[{self.name}] Secondary inlet air state is not available — "
                 f"check upstream connections on 'secondary' port."
             )
+        if not p.mass_flow or p.mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Primary inlet mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
+        if not s.mass_flow or s.mass_flow <= 0:
+            raise ValueError(
+                f"[{self.name}] Secondary inlet mass flow is zero or missing — "
+                f"verify source node airflow."
+            )
 
         f = self._determine_oa_fraction(p, s)
 
@@ -44,7 +54,7 @@ class MixingBoxNode(BaseNode):
         mixed_state = calc.from_enthalpy_w(mixed_h, mixed_w,
                                            label=f"{self.name} Out")
 
-        total_mass = (p.mass_flow or 0) + (s.mass_flow or 0)
+        total_mass = p.mass_flow + s.mass_flow
 
         self.ports["mixed"].air_state = mixed_state
         self.ports["mixed"].mass_flow = total_mass

@@ -21,7 +21,7 @@ class EnthalpyWheelNode(BaseNode):
 
     def _init_boundary_conditions(self):
         self.boundary_conditions = {
-            "sensible_recovery_btuh": None,  # Max recovery capacity (Btu/hr)
+            "total_recovery_btuh": None,  # Max total (sensible+latent) recovery (Btu/hr)
         }
 
     def compute(self, calc) -> None:
@@ -62,13 +62,13 @@ class EnthalpyWheelNode(BaseNode):
         self.ports["exhaust_out"].air_state = exhaust_out
         self.ports["exhaust_out"].mass_flow = e_mass
 
-        sensible_recovery = (s_mass * 60 *
-                             (supply_out.enthalpy - s_in.enthalpy)
-                             if s_mass else 0)
+        total_recovery = (s_mass * 60 *
+                          (supply_out.enthalpy - s_in.enthalpy)
+                          if s_mass else 0)
         self.results = {
             "supply_out_state": supply_out,
             "exhaust_out_state": exhaust_out,
-            "sensible_recovery_btuh": sensible_recovery,
+            "total_recovery_btuh": total_recovery,
         }
 
     def get_param_definitions(self):
@@ -83,7 +83,7 @@ class EnthalpyWheelNode(BaseNode):
 
     def get_boundary_definitions(self):
         return [
-            {"name": "sensible_recovery_btuh", "type": "float",
+            {"name": "total_recovery_btuh", "type": "float",
              "min": 0, "max": 1e9, "unit": "Btu/hr",
-             "tooltip": "Maximum energy recovery capacity (leave 0 for no limit)"},
+             "tooltip": "Maximum total energy recovery capacity (leave 0 for no limit)"},
         ]

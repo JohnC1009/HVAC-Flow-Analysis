@@ -1,6 +1,6 @@
 """Cooling coil node — cools and/or dehumidifies air."""
 
-from hvac_flow.engine.constants import CP_AIR_IP
+from hvac_flow.engine.constants import CP_AIR_IP, TON_TO_BTUH
 from hvac_flow.models.base_node import BaseNode, Port
 
 
@@ -68,7 +68,7 @@ class CoolingCoilNode(BaseNode):
             "total_load_btuh": total_load,
             "sensible_load_btuh": sensible_load,
             "latent_load_btuh": latent_load,
-            "total_load_tons": total_load / 12000.0,
+            "total_load_tons": total_load / TON_TO_BTUH,
             "shr": sensible_load / total_load if total_load else 0.0,
         }
 
