@@ -3,23 +3,26 @@
 from collections import deque
 from typing import Dict, List, Optional, Tuple
 
-from hvac_flow.models.base_node import BaseNode
+from hvac_flow.exceptions import CyclicGraphError, DisconnectedGraphError
+from hvac_flow.models.base_node import BaseNode, Port
 from hvac_flow.models.connector import Connector
 
 
 class FlowGraph:
     """Directed acyclic graph of BaseNode objects linked by Connectors."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes: Dict[str, BaseNode] = {}
         self.connectors: Dict[str, Connector] = {}
 
     # ── Mutation ─────────────────────────────────────────────────────
 
     def add_node(self, node: BaseNode) -> None:
+        """Add a node to the graph."""
         self.nodes[node.id] = node
 
     def remove_node(self, node_id: str) -> None:
+        """Remove a node and all its connected connectors from the graph."""
         # Remove all connectors touching this node
         to_remove = [
             c.id for c in self.connectors.values()
@@ -30,6 +33,7 @@ class FlowGraph:
         del self.nodes[node_id]
 
     def add_connector(self, connector: Connector) -> None:
+        """Add a connector and update port references."""
         self.connectors[connector.id] = connector
         # Update port references
         src = self.nodes[connector.source_node_id]
@@ -38,6 +42,7 @@ class FlowGraph:
         tgt.ports[connector.target_port_name].connected_to = connector.id
 
     def remove_connector(self, connector_id: str) -> None:
+        """Remove a connector and clear port references."""
         c = self.connectors.pop(connector_id, None)
         if c is None:
             return
@@ -52,7 +57,7 @@ class FlowGraph:
 
     def get_source_nodes(self) -> List[BaseNode]:
         """Nodes with no connected inlet ports (graph roots)."""
-        result = []
+        result: List[BaseNode] = []
         for node in self.nodes.values():
             has_connected_inlet = any(
                 p.connected_to is not None for p in node.inlet_ports
@@ -80,24 +85,28 @@ class FlowGraph:
         c = self.get_connector_to(node_id, port_name)
         if c is None:
             return None
-        return self.nodes.get(c.source_node_id), c.source_port_name
+        upstream_node = self.nodes.get(c.source_node_id)
+        if upstream_node is None:
+            return None
+        return upstream_node, c.source_port_name
 
     # ── Topological sort (Kahn's algorithm) ──────────────────────────
 
     def topological_order(self) -> List[BaseNode]:
         """Return nodes in dependency order (upstream before downstream).
 
-        Raises ValueError if the graph contains a cycle.
+        Raises:
+            CyclicGraphError: If the graph contains a cycle.
         """
         # Build in-degree map based on connected inlet ports
         in_degree: Dict[str, int] = {nid: 0 for nid in self.nodes}
         for c in self.connectors.values():
             in_degree[c.target_node_id] += 1
 
-        queue = deque(
+        queue: deque = deque(
             nid for nid, deg in in_degree.items() if deg == 0
         )
-        order = []
+        order: List[BaseNode] = []
         while queue:
             nid = queue.popleft()
             order.append(self.nodes[nid])
@@ -107,7 +116,7 @@ class FlowGraph:
                     queue.append(c.target_node_id)
 
         if len(order) != len(self.nodes):
-            raise ValueError("Graph contains a cycle — cannot solve.")
+            raise CyclicGraphError("Graph contains a cycle — cannot solve.")
         return order
 
     # ── Validation ───────────────────────────────────────────────────
@@ -118,7 +127,7 @@ class FlowGraph:
         Each error message is prefixed with ``[NodeName]`` so the user
         can quickly identify *which* node has the problem.
         """
-        errors = []
+        errors: List[str] = []
         if not self.nodes:
             errors.append("Graph is empty — add at least one node.")
             return errors
@@ -152,6 +161,18 @@ class FlowGraph:
 
         try:
             self.topological_order()
-        except ValueError as e:
+        except CyclicGraphError as e:
             errors.append(str(e))
         return errors
+
+    def is_valid(self) -> bool:
+        """Return True if the graph is valid (no errors)."""
+        return len(self.validate()) == 0
+
+    def get_statistics(self) -> Dict[str, int]:
+        """Return statistics about the graph."""
+        return {
+            "node_count": len(self.nodes),
+            "connector_count": len(self.connectors),
+            "source_count": len(self.get_source_nodes()),
+        }

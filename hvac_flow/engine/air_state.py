@@ -35,3 +35,14 @@ class AirState:
             f"h: {self.enthalpy:.2f} Btu/lb  "
             f"DP: {self.dew_point:.1f}°F"
         )
+
+    def summary_si(self) -> str:
+        """Human-readable summary in SI units."""
+        return (
+            f"DB: {self.dry_bulb:.1f}°C  "
+            f"WB: {self.wet_bulb:.1f}°C  "
+            f"RH: {self.relative_humidity * 100:.1f}%  "
+            f"W: {self.humidity_ratio:.4f} kg/kg  "
+            f"h: {self.enthalpy:.2f} kJ/kg  "
+            f"DP: {self.dew_point:.1f}°C"
+        )

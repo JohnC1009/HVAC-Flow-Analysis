@@ -1,9 +1,11 @@
 """Flow solver — propagates air states through the equipment graph."""
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from hvac_flow.engine.air_state import AirState
 from hvac_flow.engine.psychro_calc import PsychroCalc
+from hvac_flow.exceptions import CyclicGraphError, DisconnectedGraphError, SolverError
+from hvac_flow.models.base_node import BaseNode
 from hvac_flow.models.flow_graph import FlowGraph
 
 
@@ -17,9 +19,9 @@ class FlowSolver:
     * ``self.errors`` / ``self.warnings`` — aggregate lists.
     """
 
-    def __init__(self, graph: FlowGraph, calc: PsychroCalc):
-        self.graph = graph
-        self.calc = calc
+    def __init__(self, graph: FlowGraph, calc: PsychroCalc) -> None:
+        self.graph: FlowGraph = graph
+        self.calc: PsychroCalc = calc
         self.errors: List[str] = []
         self.warnings: List[str] = []
         self.all_states: List[AirState] = []
@@ -32,6 +34,10 @@ class FlowSolver:
         Returns True on success, False if errors occurred.
         After solving, self.all_states contains every resolved AirState
         (for plotting on the psychrometric chart).
+
+        Raises:
+            CyclicGraphError: If the graph contains a cycle.
+            DisconnectedGraphError: If required nodes are disconnected.
         """
         self.errors.clear()
         self.warnings.clear()
@@ -54,7 +60,7 @@ class FlowSolver:
             order = self.graph.topological_order()
         except ValueError as e:
             self.errors.append(str(e))
-            return False
+            raise CyclicGraphError(str(e)) from e
 
         for node in order:
             try:
@@ -73,11 +79,11 @@ class FlowSolver:
                         f"[{node.name}] Error: {err_msg}"
                     )
                 self.node_errors.setdefault(node.id, []).append(err_msg)
-                return False
+                raise SolverError(err_msg, node_id=node.id, node_name=node.name) from e
 
         return True
 
-    def _propagate_inlets(self, node):
+    def _propagate_inlets(self, node: BaseNode) -> None:
         """Copy upstream outlet states through connectors into inlet ports."""
         for port in node.inlet_ports:
             connector = self.graph.get_connector_to(node.id, port.name)
@@ -102,15 +108,29 @@ class FlowSolver:
             port.air_state = state
             port.mass_flow = upstream_port.mass_flow
 
-    def _check_boundary_conditions(self, node):
+    def _check_boundary_conditions(self, node: BaseNode) -> None:
         """Run boundary-condition checks and collect any warnings."""
         bc_warnings = node.check_boundary_conditions()
         if bc_warnings:
             self.warnings.extend(bc_warnings)
             self.node_warnings.setdefault(node.id, []).extend(bc_warnings)
 
-    def _collect_states(self, node):
+    def _collect_states(self, node: BaseNode) -> None:
         """Gather all resolved outlet air states for the psychrometric chart."""
         for port in node.outlet_ports:
             if port.air_state is not None:
                 self.all_states.append(port.air_state)
+
+    def get_state_by_label(self, label: str) -> Optional[AirState]:
+        """Find an AirState by its label.
+        
+        Args:
+            label: The label to search for.
+            
+        Returns:
+            The matching AirState or None.
+        """
+        for state in self.all_states:
+            if state.label == label:
+                return state
+        return None

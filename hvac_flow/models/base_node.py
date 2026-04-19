@@ -3,7 +3,10 @@
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
+from hvac_flow.engine.air_state import AirState
+from hvac_flow.exceptions import ParameterError
 
 
 @dataclass
@@ -11,7 +14,7 @@ class Port:
     """An inlet or outlet connection point on a node."""
     name: str
     direction: str  # "inlet" or "outlet"
-    air_state: Any = None  # AirState once resolved
+    air_state: Optional[AirState] = None  # AirState once resolved
     mass_flow: Optional[float] = None  # lb_da/min [IP] or kg_da/s [SI]
     connected_to: Optional[str] = None  # Connector ID
 
@@ -34,7 +37,7 @@ class BaseNode(ABC):
     NODE_TYPE: str = ""
     DISPLAY_NAME: str = ""
 
-    def __init__(self, name: str = ""):
+    def __init__(self, name: str = "") -> None:
         self.id: str = str(uuid.uuid4())
         self.name: str = name or self.DISPLAY_NAME
         self.ports: Dict[str, Port] = {}
@@ -47,14 +50,15 @@ class BaseNode(ABC):
         self._init_ports()
         self._init_parameters()
         self._init_boundary_conditions()
+        self._validate_parameters()
 
     @abstractmethod
-    def _init_ports(self):
+    def _init_ports(self) -> None:
         """Create Port objects for this node type."""
         ...
 
     @abstractmethod
-    def _init_parameters(self):
+    def _init_parameters(self) -> None:
         """Define user-editable parameters with defaults."""
         ...
 
@@ -64,10 +68,13 @@ class BaseNode(ABC):
 
         Args:
             calc: PsychroCalc instance for psychrometric lookups.
+
+        Raises:
+            ParameterError: If parameters are invalid.
         """
         ...
 
-    def _init_boundary_conditions(self):
+    def _init_boundary_conditions(self) -> None:
         """Initialise default (empty) boundary conditions.
 
         Subclasses override to populate ``self.boundary_conditions`` with
@@ -75,6 +82,54 @@ class BaseNode(ABC):
         required capacities only".
         """
         pass
+
+    def _validate_parameters(self) -> None:
+        """Validate parameter values after initialization.
+
+        Raises:
+            ParameterError: If any parameter is invalid.
+        """
+        definitions = self.get_param_definitions()
+        for param_def in definitions:
+            name = param_def.get("name")
+            if name not in self.parameters:
+                continue
+
+            value = self.parameters[name]
+            param_type = param_def.get("type", "float")
+
+            # Type validation
+            if param_type == "float":
+                if not isinstance(value, (int, float)):
+                    raise ParameterError(
+                        f"[{self.name}] Parameter '{name}' must be a number, "
+                        f"got {type(value).__name__}",
+                        node_id=self.id, node_name=self.name
+                    )
+                # Range validation
+                min_val = param_def.get("min")
+                max_val = param_def.get("max")
+                if min_val is not None and value < min_val:
+                    raise ParameterError(
+                        f"[{self.name}] Parameter '{name}' ({value}) is below "
+                        f"minimum ({min_val})",
+                        node_id=self.id, node_name=self.name
+                    )
+                if max_val is not None and value > max_val:
+                    raise ParameterError(
+                        f"[{self.name}] Parameter '{name}' ({value}) is above "
+                        f"maximum ({max_val})",
+                        node_id=self.id, node_name=self.name
+                    )
+
+            elif param_type == "choice":
+                choices = param_def.get("choices", [])
+                if choices and value not in choices:
+                    raise ParameterError(
+                        f"[{self.name}] Parameter '{name}' must be one of "
+                        f"{choices}, got '{value}'",
+                        node_id=self.id, node_name=self.name
+                    )
 
     def check_boundary_conditions(self) -> List[str]:
         """Compare computed results against boundary conditions.
@@ -111,10 +166,12 @@ class BaseNode(ABC):
 
     @property
     def inlet_ports(self) -> List[Port]:
+        """Return list of inlet ports."""
         return [p for p in self.ports.values() if p.direction == "inlet"]
 
     @property
     def outlet_ports(self) -> List[Port]:
+        """Return list of outlet ports."""
         return [p for p in self.ports.values() if p.direction == "outlet"]
 
     def get_param_definitions(self) -> List[Dict[str, Any]]:
@@ -125,9 +182,9 @@ class BaseNode(ABC):
         """
         return []
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Serialize this node to a JSON-compatible dict."""
-        d = {
+        d: Dict[str, Any] = {
             "type": self.NODE_TYPE,
             "id": self.id,
             "name": self.name,
@@ -140,7 +197,7 @@ class BaseNode(ABC):
         return d
 
     @classmethod
-    def from_dict(cls, data: dict) -> "BaseNode":
+    def from_dict(cls, data: Dict[str, Any]) -> "BaseNode":
         """Deserialize a node from a dict."""
         node = cls(name=data.get("name", ""))
         node.id = data["id"]
@@ -148,3 +205,6 @@ class BaseNode(ABC):
         node.parameters.update(data.get("parameters", {}))
         node.boundary_conditions.update(data.get("boundary_conditions", {}))
         return node
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} '{self.name}' ({self.id[:8]})>"
