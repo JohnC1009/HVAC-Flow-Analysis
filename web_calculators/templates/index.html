@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVAC Engineering Calculators</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 HVAC Engineering Calculators</h1>
+            <p class="subtitle">Professional engineering tools for HVAC design and analysis</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-calculator="conduit">Conduit Fill</button>
+            <button class="tab-btn" data-calculator="pipe">Pipe Sizing</button>
+            <button class="tab-btn" data-calculator="duct">Duct Pressure</button>
+            <button class="tab-btn" data-calculator="fan">Fan Laws</button>
+            <button class="tab-btn" data-calculator="pump">Pump Laws</button>
+        </nav>
+
+        <main>
+            <!-- Conduit Fill Calculator -->
+            <section id="conduit" class="calculator active">
+                <h2>Conduit Fill Calculator (NEC)</h2>
+                <form class="calc-form">
+                    <div class="form-group">
+                        <label for="conduit_type">Conduit Type:</label>
+                        <select id="conduit_type" name="conduit_type">
+                            <option value="EMT">EMT (Electrical Metallic Tubing)</option>
+                            <option value="RMC">RMC (Rigid Metal Conduit)</option>
+                            <option value="PVC">PVC (Polyvinyl Chloride)</option>
+                            <option value="IMC">IMC (Intermediate Metal Conduit)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="conduit_size">Conduit Size (inches):</label>
+                        <select id="conduit_size" name="conduit_size">
+                            <option value="0.5">1/2"</option>
+                            <option value="0.75">3/4"</option>
+                            <option value="1">1"</option>
+                            <option value="1.25">1-1/4"</option>
+                            <option value="1.5">1-1/2"</option>
+                            <option value="2">2"</option>
+                            <option value="2.5">2-1/2"</option>
+                            <option value="3">3"</option>
+                            <option value="3.5">3-1/2"</option>
+                            <option value="4">4"</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="wire_gauge">Wire Gauge (AWG):</label>
+                        <select id="wire_gauge" name="wire_gauge">
+                            <option value="14">14 AWG</option>
+                            <option value="12">12 AWG</option>
+                            <option value="10">10 AWG</option>
+                            <option value="8">8 AWG</option>
+                            <option value="6">6 AWG</option>
+                            <option value="4">4 AWG</option>
+                            <option value="2">2 AWG</option>
+                            <option value="1">1 AWG</option>
+                            <option value="0">1/0 AWG</option>
+                            <option value="00">2/0 AWG</option>
+                            <option value="000">3/0 AWG</option>
+                            <option value="0000">4/0 AWG</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="num_wires">Number of Wires:</label>
+                        <input type="number" id="num_wires" name="num_wires" min="1" max="100" value="3">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="insulation_type">Insulation Type:</label>
+                        <select id="insulation_type" name="insulation_type">
+                            <option value="THHN">THHN (Thermoplastic High Heat-resistant)</option>
+                            <option value="THWN">THWN (Thermoplastic Heat and Water-resistant)</option>
+                            <option value="XHHW">XHHW (Cross-linked Polyethylene)</option>
+                            <option value="USE">USE (Underground Service Entrance)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="calculate-btn">Calculate</button>
+                </form>
+
+                <div class="results">
+                    <h3>Results</h3>
+                    <div id="conduit-results" class="results-content">
+                        <p class="placeholder">Enter values and click Calculate</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pipe Sizing Calculator -->
+            <section id="pipe" class="calculator">
+                <h2>Pipe Sizing Calculator (ASHRAE)</h2>
+                <form class="calc-form">
+                    <div class="form-group">
+                        <label for="flow_rate_gpm">Flow Rate (GPM):</label>
+                        <input type="number" id="flow_rate_gpm" name="flow_rate_gpm" min="0.1" step="0.1" value="50.0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pipe_material">Pipe Material:</label>
+                        <select id="pipe_material" name="pipe_material">
+                            <option value="CU">Copper (Type L)</option>
+                            <option value="CPVC">CPVC</option>
+                            <option value="PEX">PEX</option>
+                            <option value="STEEL">Steel (Schedule 40)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max_velocity_fps">Max Velocity (ft/s):</label>
+                        <input type="number" id="max_velocity_fps" name="max_velocity_fps" min="1" step="0.5" value="8.0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max_pressure_drop">Max Pressure Drop (ft H2O/100ft):</label>
+                        <input type="number" id="max_pressure_drop" name="max_pressure_drop" min="0.1" step="0.5" value="4.0">
+                    </div>
+
+                    <button type="submit" class="calculate-btn">Calculate</button>
+                </form>
+
+                <div class="results">
+                    <h3>Results</h3>
+                    <div id="pipe-results" class="results-content">
+                        <p class="placeholder">Enter values and click Calculate</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Duct Pressure Drop Calculator -->
+            <section id="duct" class="calculator">
+                <h2>Duct Pressure Drop Calculator (SMACNA)</h2>
+                <form class="calc-form">
+                    <div class="form-group">
+                        <label for="airflow_cfm">Airflow (CFM):</label>
+                        <input type="number" id="airflow_cfm" name="airflow_cfm" min="10" step="10" value="1000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duct_width_in">Duct Width (inches):</label>
+                        <input type="number" id="duct_width_in" name="duct_width_in" min="4" step="1" value="12">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duct_height_in">Duct Height (inches):</label>
+                        <input type="number" id="duct_height_in" name="duct_height_in" min="4" step="1" value="12">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duct_material">Duct Material:</label>
+                        <select id="duct_material" name="duct_material">
+                            <option value="galvanized">Galvanized Steel</option>
+                            <option value="aluminum">Aluminum</option>
+                            <option value="fiberglass">Fiberglass Lined</option>
+                            <option value="flexible">Flexible Duct</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="length_ft">Duct Length (feet):</label>
+                        <input type="number" id="length_ft" name="length_ft" min="1" step="1" value="100">
+                    </div>
+
+                    <button type="submit" class="calculate-btn">Calculate</button>
+                </form>
+
+                <div class="results">
+                    <h3>Results</h3>
+                    <div id="duct-results" class="results-content">
+                        <p class="placeholder">Enter values and click Calculate</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Fan Laws Calculator -->
+            <section id="fan" class="calculator">
+                <h2>Fan Laws Calculator (AMCA)</h2>
+                <form class="calc-form">
+                    <div class="form-group">
+                        <label for="fan_calc_type">Calculate:</label>
+                        <select id="fan_calc_type" name="calculation_type">
+                            <option value="cfm">New CFM (given new RPM)</option>
+                            <option value="rpm">New RPM (given new CFM)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfm_1">Initial CFM:</label>
+                        <input type="number" id="cfm_1" name="cfm_1" min="0" step="100" value="10000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rpm_1">Initial RPM:</label>
+                        <input type="number" id="rpm_1" name="rpm_1" min="0" step="100" value="1200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bhp_1">Initial BHP:</label>
+                        <input type="number" id="bhp_1" name="bhp_1" min="0.1" step="0.5" value="10.0">
+                    </div>
+
+                    <div class="form-group fan-condition" data-type="cfm">
+                        <label for="cfm_2">New CFM:</label>
+                        <input type="number" id="cfm_2" name="cfm_2" min="0" step="100" value="12000">
+                    </div>
+
+                    <div class="form-group fan-condition" data-type="rpm" style="display: none;">
+                        <label for="rpm_2">New RPM:</label>
+                        <input type="number" id="rpm_2" name="rpm_2" min="0" step="100" value="1500">
+                    </div>
+
+                    <button type="submit" class="calculate-btn">Calculate</button>
+                </form>
+
+                <div class="results">
+                    <h3>Results</h3>
+                    <div id="fan-results" class="results-content">
+                        <p class="placeholder">Enter values and click Calculate</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pump Laws Calculator -->
+            <section id="pump" class="calculator">
+                <h2>Pump Laws Calculator (Hydraulic Institute)</h2>
+                <form class="calc-form">
+                    <div class="form-group">
+                        <label for="pump_calc_type">Calculate:</label>
+                        <select id="pump_calc_type" name="calculation_type">
+                            <option value="gpm">New GPM (given new RPM)</option>
+                            <option value="rpm">New RPM (given new GPM)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gpm_1">Initial GPM:</label>
+                        <input type="number" id="gpm_1" name="gpm_1" min="0" step="10" value="500">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rpm_1">Initial RPM:</label>
+                        <input type="number" id="rpm_1" name="rpm_1" min="0" step="100" value="1750">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="head_1">Initial Head (ft):</label>
+                        <input type="number" id="head_1" name="head_1" min="0" step="5" value="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bhp_1">Initial BHP:</label>
+                        <input type="number" id="bhp_1" name="bhp_1" min="0.1" step="0.5" value="25.0">
+                    </div>
+
+                    <div class="form-group pump-condition" data-type="gpm">
+                        <label for="gpm_2">New GPM:</label>
+                        <input type="number" id="gpm_2" name="gpm_2" min="0" step="10" value="600">
+                    </div>
+
+                    <div class="form-group pump-condition" data-type="rpm" style="display: none;">
+                        <label for="rpm_2">New RPM:</label>
+                        <input type="number" id="rpm_2" name="rpm_2" min="0" step="100" value="2100">
+                    </div>
+
+                    <button type="submit" class="calculate-btn">Calculate</button>
+                </form>
+
+                <div class="results">
+                    <h3>Results</h3>
+                    <div id="pump-results" class="results-content">
+                        <p class="placeholder">Enter values and click Calculate</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>HVAC Engineering Calculators &copy; 2026 | Standards: NEC, ASHRAE, SMACNA, AMCA, HI</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
